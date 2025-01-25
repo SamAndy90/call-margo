@@ -1,30 +1,32 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import Navigation from "@/components/layout/Navigation";
-import PageWrapper from "@/components/layout/PageWrapper";
-import { AuthProvider } from "@/context/AuthContext";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { Suspense } from "react";
+import './globals.css';
+import { Inter } from 'next/font/google';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
-export const metadata: Metadata = {
-  title: "Margo OS - Marketing OS for Small Business Founders",
-  description: "Streamline your marketing operations with Margo OS",
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata = {
+  title: 'Margo OS - Marketing OS for Small Business Founders',
+  description: 'Streamline your marketing operations with Margo OS',
 };
 
-export default function RootLayout({
+export const revalidate = 0;
+
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const supabase = createServerComponentClient({ cookies });
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   return (
-    <html lang="en" className="h-full">
-      <body className="h-full antialiased">
-        <Suspense fallback={<LoadingSpinner />}>
-          <AuthProvider>
-            <Navigation />
-            <PageWrapper>{children}</PageWrapper>
-          </AuthProvider>
-        </Suspense>
+    <html lang="en" className="h-full bg-white">
+      <body className={`${inter.className} h-full antialiased`}>
+        {children}
       </body>
     </html>
   );
