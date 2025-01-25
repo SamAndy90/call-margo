@@ -1,10 +1,9 @@
 'use client';
 
 import React, { Fragment, useState, useEffect, useCallback } from 'react';
-import { Tab } from '@headlessui/react';
+import { Tab, Dialog, Transition, Menu } from '@headlessui/react';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { Menu, Transition } from '@headlessui/react';
 import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabaseClient';
@@ -95,12 +94,27 @@ interface AudienceProfile {
   archived?: boolean;
 }
 
+interface ProductProfile {
+  id?: string;
+  user_id: string;
+  name: string;
+  type: string;
+  purpose_benefit: string;
+  audience: string[];
+  description: string;
+  market_category: string;
+  problem_solved: string[];
+  created_at?: Date;
+  updated_at?: Date;
+  archived?: boolean;
+}
+
 const tabs = [
   { name: 'Company', href: '#company' },
   { name: 'Brand', href: '#brand' },
   { name: 'Channels', href: '#channels' },
   { name: 'Audience', href: '#audience' },
-  { name: 'Product', href: '#product' },
+  { name: 'Products', href: '#products' },
   { name: 'Competitors', href: '#competitors' },
   { name: 'Tech Stack', href: '#tech-stack' },
 ];
@@ -175,6 +189,10 @@ function MarketingArchitectureContent() {
   const [selectedAudienceId, setSelectedAudienceId] = useState<string | null>(null);
   const [isVocModalOpen, setIsVocModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [productProfiles, setProductProfiles] = useState<ProductProfile[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>();
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [newProductProfile, setNewProductProfile] = useState<Partial<ProductProfile>>({});
   const { user } = useUser();
 
   useEffect(() => {
@@ -622,6 +640,54 @@ function MarketingArchitectureContent() {
     }
   }, [user?.id, selectedAudienceId]);
 
+  const fetchProductProfiles = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data: profiles, error } = await supabase
+        .from('product_profiles')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      if (!profiles || profiles.length === 0) {
+        const { data: newProfile, error: createError } = await supabase
+          .from('product_profiles')
+          .insert([{
+            user_id: user.id,
+            name: 'Primary Product',
+            type: 'SaaS',
+            purpose_benefit: 'Help businesses manage and grow their marketing efforts',
+            audience: ['Small Business Owners', 'Marketing Teams'],
+            description: 'A comprehensive marketing management platform',
+            market_category: 'Marketing Software',
+            problem_solved: ['Marketing Strategy', 'Team Collaboration', 'Performance Tracking']
+          }])
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        
+        if (newProfile) {
+          setProductProfiles([newProfile]);
+          setSelectedProductId(newProfile.id);
+        }
+      } else {
+        setProductProfiles(profiles);
+        if (!selectedProductId && profiles.length > 0) {
+          setSelectedProductId(profiles[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching product profiles:', error);
+    }
+  }, [user?.id, selectedProductId]);
+
+  useEffect(() => {
+    fetchProductProfiles();
+  }, [fetchProductProfiles]);
+
   const handleCompanyDataChange = async (field: keyof CompanyData, value: string) => {
     setCompanyData(prev => ({
       ...prev,
@@ -807,6 +873,30 @@ function MarketingArchitectureContent() {
       }
     } catch (error: unknown) {
       console.error('Error deleting audience profile:', error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleSaveProductProfile = async () => {
+    try {
+      if (!user?.id) return;
+
+      const { data: newProfile, error } = await supabase
+        .from('product_profiles')
+        .insert([{
+          ...newProductProfile,
+          user_id: user.id
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setProductProfiles(prev => [...prev, newProfile]);
+      setSelectedProductId(newProfile.id);
+      setIsProductModalOpen(false);
+      setNewProductProfile({});
+    } catch (error) {
+      console.error('Error saving product profile:', error);
     }
   };
 
@@ -1148,9 +1238,9 @@ function MarketingArchitectureContent() {
                     </div>
                     <Menu as="div" className="relative inline-block text-left">
                       <div>
-                        <Menu.Button className="btn flex items-center rounded-full p-2">
+                        <Menu.Button className="flex items-center rounded-full p-2 bg-white hover:bg-teal-50">
                           <span className="sr-only">Open options</span>
-                          <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+                          <EllipsisVerticalIcon className="h-5 w-5" style={{ color: '#d06e63' }} aria-hidden="true" />
                         </Menu.Button>
                       </div>
 
@@ -1216,7 +1306,7 @@ function MarketingArchitectureContent() {
                 <div className="mt-6">
                   <AudienceProfileDetails
                     profile={selectedProfile}
-                    onProfileChange={(field, value) => handleEditAudienceProfile(selectedAudienceId, field, value)}
+                    onProfileChange={(field, value) => handleAudienceProfileChange(selectedAudienceId, field, value)}
                     onAddVoiceOfCustomer={(data) => handleAddVoiceOfCustomer(selectedAudienceId, data)}
                     onAddNote={(data) => handleAddNote(selectedAudienceId, data)}
                   />
@@ -1224,12 +1314,216 @@ function MarketingArchitectureContent() {
               )}
             </Tab.Panel>
 
-            {/* Product Panel */}
-            <Tab.Panel>
-              <div className="text-center py-12">
-                <h3 className="mt-2 text-sm font-semibold text-gray-900">No products configured</h3>
-                <p className="mt-1 text-sm text-gray-500">Get started by creating a new product.</p>
+            {/* Products Panel */}
+            <Tab.Panel className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-medium text-gray-900">Product Profiles</h2>
+                <button
+                  onClick={() => setIsProductModalOpen(true)}
+                  style={{ backgroundColor: '#d06e63' }}
+                  className="btn text-white px-4 py-2 rounded-md hover:opacity-90"
+                >
+                  Add Profile
+                </button>
               </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {productProfiles.map((profile) => (
+                  <div
+                    key={profile.id}
+                    className={classNames(
+                      'relative rounded-lg border p-4 hover:border-gray-400',
+                      selectedProductId === profile.id ? 'border-gray-400' : 'border-gray-200'
+                    )}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setSelectedProductId(profile.id)}>
+                        <p className="text-sm font-medium text-gray-900">{profile.name}</p>
+                        <p className="truncate text-sm text-gray-500">{profile.description || 'No description'}</p>
+                      </div>
+                      <Menu as="div" className="relative inline-block text-left">
+                        <div>
+                          <Menu.Button className="flex items-center rounded-full p-2 bg-white hover:bg-teal-50">
+                            <span className="sr-only">Open options</span>
+                            <EllipsisVerticalIcon className="h-5 w-5" style={{ color: '#d06e63' }} aria-hidden="true" />
+                          </Menu.Button>
+                        </div>
+
+                        <Transition
+                          as={Fragment}
+                          enter="transition ease-out duration-100"
+                          enterFrom="transform opacity-0 scale-95"
+                          enterTo="transform opacity-100 scale-100"
+                          leave="transition ease-in duration-75"
+                          leaveFrom="transform opacity-100 scale-100"
+                          leaveTo="transform opacity-0 scale-95"
+                        >
+                          <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <div className="py-1">
+                              <Menu.Item>
+                                {({ active }) => (
+                                  <button
+                                    onClick={() => {/* TODO: Add edit functionality */}}
+                                    className={classNames(
+                                      active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                      'block w-full px-4 py-2 text-left text-sm'
+                                    )}
+                                  >
+                                    Edit
+                                  </button>
+                                )}
+                              </Menu.Item>
+                              <Menu.Item>
+                                {({ active }) => (
+                                  <button
+                                    onClick={() => {/* TODO: Add archive functionality */}}
+                                    className={classNames(
+                                      active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                      'block w-full px-4 py-2 text-left text-sm'
+                                    )}
+                                  >
+                                    Archive
+                                  </button>
+                                )}
+                              </Menu.Item>
+                            </div>
+                          </Menu.Items>
+                        </Transition>
+                      </Menu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {selectedProductId && (
+                <div className="mt-6 space-y-6">
+                  {productProfiles.map((profile) => {
+                    if (profile.id !== selectedProductId) return null;
+                    return (
+                      <div key={profile.id} className="space-y-6">
+                        <FormField
+                          label="Product Name"
+                          id="name"
+                          value={profile.name}
+                          onChange={(value) => {/* TODO: Add update functionality */}}
+                        />
+                        <FormField
+                          label="Type"
+                          id="type"
+                          value={profile.type}
+                          onChange={(value) => {/* TODO: Add update functionality */}}
+                        />
+                        <FormField
+                          label="Purpose/Benefit"
+                          id="purpose_benefit"
+                          type="textarea"
+                          value={profile.purpose_benefit}
+                          onChange={(value) => {/* TODO: Add update functionality */}}
+                        />
+                        <FormField
+                          label="Description"
+                          id="description"
+                          type="textarea"
+                          value={profile.description}
+                          onChange={(value) => {/* TODO: Add update functionality */}}
+                        />
+                        <FormField
+                          label="Market Category"
+                          id="market_category"
+                          value={profile.market_category}
+                          onChange={(value) => {/* TODO: Add update functionality */}}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add Product Profile Modal */}
+              <Transition.Root show={isProductModalOpen} as={Fragment}>
+                <Dialog as="div" className="relative z-10" onClose={setIsProductModalOpen}>
+                  <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+
+                  <div className="fixed inset-0 z-10 overflow-y-auto">
+                    <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                      <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                        enterTo="opacity-100 translate-y-0 sm:scale-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                        leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                      >
+                        <Dialog.Panel className="relative transform rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                          <div>
+                            <div className="mt-3 text-center sm:mt-5">
+                              <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
+                                Add Product Profile
+                              </Dialog.Title>
+                              <div className="mt-2">
+                                <div className="space-y-4">
+                                  <FormField
+                                    label="Product Name"
+                                    id="name"
+                                    value={newProductProfile.name || ''}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, name: value }))}
+                                  />
+                                  <FormField
+                                    label="Type"
+                                    id="type"
+                                    value={newProductProfile.type || ''}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, type: value }))}
+                                  />
+                                  <FormField
+                                    label="Purpose/Benefit"
+                                    id="purpose_benefit"
+                                    type="textarea"
+                                    value={newProductProfile.purpose_benefit || ''}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, purpose_benefit: value }))}
+                                  />
+                                  <FormField
+                                    label="Description"
+                                    id="description"
+                                    type="textarea"
+                                    value={newProductProfile.description || ''}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, description: value }))}
+                                  />
+                                  <FormField
+                                    label="Market Category"
+                                    id="market_category"
+                                    value={newProductProfile.market_category || ''}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, market_category: value }))}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                            <button
+                              type="button"
+                              className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2"
+                              onClick={handleSaveProductProfile}
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                              onClick={() => {
+                                setIsProductModalOpen(false);
+                                setNewProductProfile({});
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </Dialog.Panel>
+                      </Transition.Child>
+                    </div>
+                  </div>
+                </Dialog>
+              </Transition.Root>
             </Tab.Panel>
 
             {/* Other panels */}
