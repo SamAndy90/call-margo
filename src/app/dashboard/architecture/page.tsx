@@ -2,13 +2,8 @@
 
 import React, { Fragment, useState, useEffect, useCallback } from 'react';
 import { Tab, Dialog, Transition, Menu } from '@headlessui/react';
-import { UserGroupIcon } from '@heroicons/react/24/outline';
-import { PlusIcon } from '@heroicons/react/24/outline';
 import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
-import { useUser } from '@/hooks/useUser';
-import { supabase } from '@/lib/supabaseClient';
-import TeamMemberModal from '@/components/modals/TeamMemberModal';
-import AudienceProfileDetails from '@/components/marketing-architecture/AudienceProfileDetails';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import FormField from '@/components/forms/FormField';
 import ListField from '@/components/marketing-architecture/ListField';
 import { PostgrestError } from '@supabase/supabase-js';
@@ -173,8 +168,6 @@ function MarketingArchitectureContent() {
   });
   const [audienceProfiles, setAudienceProfiles] = useState<AudienceProfile[]>([]);
   const [selectedAudienceId, setSelectedAudienceId] = useState<string | null>(null);
-  const [isVocModalOpen, setIsVocModalOpen] = useState(false);
-  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [productProfiles, setProductProfiles] = useState<ProductProfile[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>();
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -714,7 +707,7 @@ function MarketingArchitectureContent() {
     }
   };
 
-  const handleAudienceProfileChange = async (profileId: string, field: string, value: any) => {
+  const handleAudienceProfileChange = async (profileId: string, field: keyof AudienceProfile, value: string | string[]) => {
     const profile = audienceProfiles.find(p => p.id === profileId);
     if (!profile) return;
 
@@ -965,7 +958,7 @@ function MarketingArchitectureContent() {
     }
   };
 
-  const handleCompetitorChange = (field: keyof CompetitorProfile, value: any) => {
+  const handleCompetitorChange = (field: keyof CompetitorProfile, value: string | string[] | boolean | { [key: string]: string }) => {
     if (!selectedCompetitorId) return;
 
     const updates = { [field]: value };
