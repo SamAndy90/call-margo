@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { Dialog } from '@headlessui/react';
 import FormField from '@/components/forms/FormField';
 import ListField from '@/components/forms/ListField';
 import VoiceOfCustomerForm from './VoiceOfCustomerForm';

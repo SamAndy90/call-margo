@@ -168,6 +168,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          <p className="mt-2 text-sm text-gray-500">
+            Let&apos;s get started with your dashboard. Here&apos;s what you can do:
+          </p>
         </div>
       </div>
     </div>

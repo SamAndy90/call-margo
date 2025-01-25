@@ -2,20 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Image from 'next/image';
 
 export default function SignIn() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectedFrom = searchParams.get('redirectedFrom') || '/dashboard';
-  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
+  const router = useRouter();
   const supabase = createClientComponentClient();
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -57,12 +51,6 @@ export default function SignIn() {
 
       <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
         <form className="space-y-6" onSubmit={handleSignIn}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
-          
           <div>
             <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
               Email address
@@ -112,10 +100,9 @@ export default function SignIn() {
           <div>
             <button
               type="submit"
-              disabled={loading}
-              className="flex w-full justify-center rounded-md bg-coral-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-coral-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex w-full justify-center rounded-md bg-coral-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-coral-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              Sign in
             </button>
           </div>
         </form>
