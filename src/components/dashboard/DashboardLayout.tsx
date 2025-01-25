@@ -12,7 +12,8 @@ import {
   DocumentTextIcon,
   Cog6ToothIcon,
   XMarkIcon,
-  Bars3Icon
+  Bars3Icon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -111,7 +112,7 @@ export default function DashboardLayout({
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <div className="h-8 w-8 rounded-lg bg-coral-50 flex items-center justify-center">
-                    <UsersIcon className="h-5 w-5 text-coral-600" />
+                    <UserCircleIcon className="h-5 w-5 text-coral-600" />
                   </div>
                 </div>
                 <div className="ml-3">
