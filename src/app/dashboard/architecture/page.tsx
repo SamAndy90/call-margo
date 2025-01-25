@@ -930,20 +930,44 @@ function MarketingArchitectureContent() {
 
   const handleUpdateCompetitor = async (competitorId: string, updates: Partial<CompetitorProfile>) => {
     try {
-      const { data: updatedCompetitor, error } = await supabase
+      const { error } = await supabase
         .from('competitors')
         .update(updates)
-        .eq('id', competitorId)
-        .select()
-        .single();
+        .eq('id', competitorId);
 
-      if (error) throw error;
+      if (error) {
+        handleError(error);
+        return;
+      }
 
-      setCompetitors((prev) =>
-        prev.map((c) => (c.id === competitorId ? { ...c, ...updatedCompetitor } : c))
-      );
+      // Refresh competitors list
+      const loadCompetitors = async () => {
+        if (!user?.id) return;
+
+        try {
+          const { data, error } = await supabase
+            .from('competitors')
+            .select('*')
+            .eq('user_id', user.id);
+
+          if (error) {
+            handleError(error);
+            return;
+          }
+
+          setCompetitors(data || []);
+        } catch (error) {
+          if (error instanceof Error) {
+            console.error('Error loading competitors:', error.message);
+          }
+        }
+      };
+
+      loadCompetitors();
     } catch (error) {
-      console.error('Error updating competitor:', error);
+      if (error instanceof Error) {
+        console.error('Error updating competitor:', error.message);
+      }
     }
   };
 
@@ -1548,33 +1572,33 @@ function MarketingArchitectureContent() {
                                     label="Product Name"
                                     id="name"
                                     value={newProductProfile.name || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, name: value }))}
+                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, name: newValue }))}
                                   />
                                   <FormField
                                     label="Type"
                                     id="type"
                                     value={newProductProfile.type || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, type: value }))}
+                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, type: newValue }))}
                                   />
                                   <FormField
                                     label="Purpose/Benefit"
                                     id="purpose_benefit"
                                     type="textarea"
                                     value={newProductProfile.purpose_benefit || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, purpose_benefit: value }))}
+                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, purpose_benefit: newValue }))}
                                   />
                                   <FormField
                                     label="Description"
                                     id="description"
                                     type="textarea"
                                     value={newProductProfile.description || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, description: value }))}
+                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, description: newValue }))}
                                   />
                                   <FormField
                                     label="Market Category"
                                     id="market_category"
                                     value={newProductProfile.market_category || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, market_category: value }))}
+                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, market_category: newValue }))}
                                   />
                                 </div>
                               </div>
@@ -1735,7 +1759,7 @@ function MarketingArchitectureContent() {
                           id="description"
                           type="textarea"
                           value={competitors.find(c => c.id === selectedCompetitorId)?.description || ''}
-                          onChange={(value) => handleCompetitorChange('description', value)}
+                          onChange={(newValue) => handleCompetitorChange('description', newValue)}
                         />
                         <ListField
                           label="Strengths"
@@ -1756,7 +1780,7 @@ function MarketingArchitectureContent() {
                           label="Website"
                           id="website"
                           value={competitors.find(c => c.id === selectedCompetitorId)?.website || ''}
-                          onChange={(value) => handleCompetitorChange('website', value)}
+                          onChange={(newValue) => handleCompetitorChange('website', newValue)}
                         />
                         <div className="flex items-center space-x-2">
                           <input
@@ -1777,31 +1801,31 @@ function MarketingArchitectureContent() {
                               label="Twitter"
                               id="twitter"
                               value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.twitter || ''}
-                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, twitter: value })}
+                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, twitter: newValue })}
                             />
                             <FormField
                               label="Facebook"
                               id="facebook"
                               value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.facebook || ''}
-                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, facebook: value })}
+                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, facebook: newValue })}
                             />
                             <FormField
                               label="LinkedIn"
                               id="linkedin"
                               value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.linkedin || ''}
-                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, linkedin: value })}
+                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, linkedin: newValue })}
                             />
                             <FormField
                               label="TikTok"
                               id="tiktok"
                               value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.tiktok || ''}
-                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, tiktok: value })}
+                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, tiktok: newValue })}
                             />
                             <FormField
                               label="Instagram"
                               id="instagram"
                               value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.instagram || ''}
-                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, instagram: value })}
+                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, instagram: newValue })}
                             />
                           </div>
                         </div>
@@ -1810,7 +1834,7 @@ function MarketingArchitectureContent() {
                           id="other_comments"
                           type="textarea"
                           value={competitors.find(c => c.id === selectedCompetitorId)?.other_comments || ''}
-                          onChange={(value) => handleCompetitorChange('other_comments', value)}
+                          onChange={(newValue) => handleCompetitorChange('other_comments', newValue)}
                         />
                       </div>
                     </div>
@@ -1864,14 +1888,14 @@ function MarketingArchitectureContent() {
                             label="Name"
                             id="name"
                             value={newCompetitorProfile.name || ''}
-                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, name: value }))}
+                            onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, name: newValue }))}
                           />
                           <FormField
                             label="Description"
                             id="description"
                             type="textarea"
                             value={newCompetitorProfile.description || ''}
-                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, description: value }))}
+                            onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, description: newValue }))}
                           />
                           <ListField
                             label="Strengths"
@@ -1892,7 +1916,7 @@ function MarketingArchitectureContent() {
                             label="Website"
                             id="website"
                             value={newCompetitorProfile.website || ''}
-                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, website: value }))}
+                            onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, website: newValue }))}
                           />
                           <div className="flex items-center space-x-2">
                             <input
@@ -1913,31 +1937,31 @@ function MarketingArchitectureContent() {
                                 label="Twitter"
                                 id="twitter"
                                 value={newCompetitorProfile.social_accounts?.twitter || ''}
-                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, twitter: value } }))}
+                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, twitter: newValue } }))}
                               />
                               <FormField
                                 label="Facebook"
                                 id="facebook"
                                 value={newCompetitorProfile.social_accounts?.facebook || ''}
-                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, facebook: value } }))}
+                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, facebook: newValue } }))}
                               />
                               <FormField
                                 label="LinkedIn"
                                 id="linkedin"
                                 value={newCompetitorProfile.social_accounts?.linkedin || ''}
-                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, linkedin: value } }))}
+                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, linkedin: newValue } }))}
                               />
                               <FormField
                                 label="TikTok"
                                 id="tiktok"
                                 value={newCompetitorProfile.social_accounts?.tiktok || ''}
-                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, tiktok: value } }))}
+                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, tiktok: newValue } }))}
                               />
                               <FormField
                                 label="Instagram"
                                 id="instagram"
                                 value={newCompetitorProfile.social_accounts?.instagram || ''}
-                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, instagram: value } }))}
+                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, instagram: newValue } }))}
                               />
                             </div>
                           </div>
@@ -1946,7 +1970,7 @@ function MarketingArchitectureContent() {
                             id="other_comments"
                             type="textarea"
                             value={newCompetitorProfile.other_comments || ''}
-                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, other_comments: value }))}
+                            onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, other_comments: newValue }))}
                           />
                         </div>
                       </div>
