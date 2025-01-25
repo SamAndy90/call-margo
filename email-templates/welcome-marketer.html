@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to Margo OS - Your Marketing Platform</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+        .welcome-message {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1F2937;
+            margin-bottom: 20px;
+        }
+        .content {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #D06E63;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .expertise-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #F9FAFB;
+            border-radius: 8px;
+        }
+        .expertise-tag {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #EEF2FF;
+            color: #4F46E5;
+            border-radius: 16px;
+            margin: 4px;
+            font-size: 14px;
+        }
+        .opportunities {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #F9FAFB;
+            border-radius: 8px;
+        }
+        .opportunity {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .opportunity-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #D06E63;
+            color: white;
+            text-align: center;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            color: #6B7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="http://cdn.mcauto-images-production.sendgrid.net/93d624ba180cb50a/e265a9e5-00d7-4a90-b94a-ec569233f8f8/1000x273.png" alt="Margo OS" class="logo" style="width: 180px; height: 49px;">
+            <div class="welcome-message">Welcome aboard, {{name}}!</div>
+        </div>
+        
+        <div class="content">
+            <p>We're thrilled to have you join Margo OS as a marketing expert. Your expertise in {{expertise}} will be valuable to businesses looking for marketing professionals.</p>
+            
+            <p>Your account is ready, and you can start exploring opportunities that match your skills.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{dashboardUrl}}" class="button">Access Your Dashboard</a>
+            </div>
+
+            <div class="expertise-section">
+                <h2>Your Expertise Areas</h2>
+                {{#each expertise}}
+                <span class="expertise-tag">{{this}}</span>
+                {{/each}}
+                <p style="margin-top: 15px;">You can update your expertise areas anytime from your profile settings.</p>
+            </div>
+
+            <div class="opportunities">
+                <h2>What You Can Do Now</h2>
+                
+                <div class="opportunity">
+                    <div class="opportunity-icon">✓</div>
+                    <div>
+                        <strong>Complete Your Profile</strong>
+                        <p>Add your portfolio, case studies, and achievements to stand out to potential clients.</p>
+                    </div>
+                </div>
+                
+                <div class="opportunity">
+                    <div class="opportunity-icon">✓</div>
+                    <div>
+                        <strong>Browse Opportunities</strong>
+                        <p>Explore businesses looking for marketing expertise in your areas of specialization.</p>
+                    </div>
+                </div>
+                
+                <div class="opportunity">
+                    <div class="opportunity-icon">✓</div>
+                    <div>
+                        <strong>Set Your Availability</strong>
+                        <p>Let businesses know when you're available for new projects.</p>
+                    </div>
+                </div>
+            </div>
+
+            <p>Need help getting started? Check out our <a href="{{setupGuideUrl}}" style="color: #D06E63;">Marketer Setup Guide</a> or reach out to our support team at {{supportEmail}}.</p>
+        </div>
+
+        <div class="footer">
+            <p>You're receiving this email because you signed up for Margo OS. If you didn't create this account, please contact us.</p>
+            <p>Margo OS, Inc. • <a href="{{unsubscribeUrl}}" style="color: #6B7280;">Unsubscribe</a></p>
+        </div>
+    </div>
+</body>
+</html>
