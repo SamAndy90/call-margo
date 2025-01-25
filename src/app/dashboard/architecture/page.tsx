@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Tab } from '@headlessui/react';
-import { PlusIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon } from '@heroicons/react/24/outline';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabaseClient';
 import TeamMemberModal from '@/components/modals/TeamMemberModal';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -82,19 +82,14 @@ function MarketingArchitectureContent() {
   });
   const { user } = useUser();
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchCompanyData();
-      fetchTeamMembers();
-    }
-  }, [user?.id]);
-
-  const fetchCompanyData = async () => {
+  const fetchCompanyData = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('companies')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
 
       if (error) throw error;
@@ -104,14 +99,16 @@ function MarketingArchitectureContent() {
     } catch (error) {
       console.error('Error fetching company data:', error);
     }
-  };
+  }, [user?.id]);
 
-  const fetchTeamMembers = async () => {
+  const fetchTeamMembers = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('team_members')
         .select('*')
-        .eq('company_id', user?.id);
+        .eq('company_id', user.id);
 
       if (error) throw error;
       if (data) {
@@ -120,7 +117,12 @@ function MarketingArchitectureContent() {
     } catch (error) {
       console.error('Error fetching team members:', error);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchCompanyData();
+    fetchTeamMembers();
+  }, [fetchCompanyData, fetchTeamMembers]);
 
   const handleCompanyDataChange = async (field: string, value: string) => {
     setCompanyData((prev) => ({ ...prev, [field]: value }));

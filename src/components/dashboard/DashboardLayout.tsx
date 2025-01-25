@@ -25,7 +25,7 @@ const navigation = [
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];
 
-export default function DashboardLayout({
+function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -206,3 +206,5 @@ export default function DashboardLayout({
     </div>
   );
 }
+
+export default DashboardLayout;
