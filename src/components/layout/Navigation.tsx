@@ -42,47 +42,25 @@ export default function Navigation() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden sm:flex sm:items-center sm:space-x-8">
+          <div className="hidden sm:flex sm:items-center sm:space-x-4">
             {user ? (
-              <>
-                <Link href="/dashboard" className="text-gray-600 hover:text-coral">
-                  Dashboard
-                </Link>
-                <Link href="/campaigns" className="text-gray-600 hover:text-coral">
-                  Campaigns
-                </Link>
-                <Link href="/analytics" className="text-gray-600 hover:text-coral">
-                  Analytics
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="px-4 py-2 bg-coral/10 text-coral border-b-2 border-coral 
-                    rounded-t-lg rounded-b-none hover:bg-coral/20 transition-all"
-                >
-                  Sign Out
-                </button>
-              </>
+              <button
+                onClick={handleSignOut}
+                className="text-gray-600 hover:text-coral"
+              >
+                Sign Out
+              </button>
             ) : (
               <>
-                <Link href="/features" className="text-gray-600 hover:text-coral">
-                  Features
-                </Link>
-                <Link href="/pricing" className="text-gray-600 hover:text-coral">
-                  Pricing
-                </Link>
-                <Link href="/about" className="text-gray-600 hover:text-coral">
-                  About
-                </Link>
                 <button
                   onClick={handleSignIn}
-                  className="px-4 py-2 text-gray-600 hover:text-coral transition-all"
+                  className="text-gray-600 hover:text-coral"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={handleSignUp}
-                  className="px-4 py-2 bg-coral/10 text-coral border-b-2 border-coral 
-                    rounded-t-lg rounded-b-none hover:bg-coral/20 transition-all"
+                  className="px-4 py-2 text-white bg-coral rounded-md hover:bg-coral/90"
                 >
                   Sign Up
                 </button>

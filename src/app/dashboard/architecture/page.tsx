@@ -86,18 +86,44 @@ function MarketingArchitectureContent() {
     if (!user?.id) return;
     
     try {
-      const { data, error } = await supabase
+      // First try to fetch existing company data
+      const { data: existingCompany, error: fetchError } = await supabase
         .from('companies')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
-      if (data) {
-        setCompanyData(data);
+      if (existingCompany) {
+        setCompanyData(existingCompany);
+        return;
+      }
+
+      // If no company exists, create a new one
+      const { data: newCompany, error: insertError } = await supabase
+        .from('companies')
+        .insert([
+          {
+            user_id: user.id,
+            name: '',
+            description: '',
+            mission: '',
+            vision: '',
+            website: '',
+            founded: '',
+            strengths: '',
+            weaknesses: '',
+            differentiators: '',
+          }
+        ])
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      if (newCompany) {
+        setCompanyData(newCompany);
       }
     } catch (error) {
-      console.error('Error fetching company data:', error);
+      console.error('Error handling company data:', error);
     }
   }, [user?.id]);
 
