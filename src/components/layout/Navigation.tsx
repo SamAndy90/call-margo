@@ -109,82 +109,82 @@ export default function Navigation() {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Mobile menu */}
-      {isOpen && (
-        <div className="sm:hidden">
-          <div className="pt-2 pb-3 space-y-1 bg-white border-b border-gray-100">
-            {user ? (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/campaigns"
-                  className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
-                >
-                  Campaigns
-                </Link>
-                <Link
-                  href="/analytics"
-                  className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
-                >
-                  Analytics
-                </Link>
-                <div className="px-4 py-2">
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full px-4 py-2 bg-coral/10 text-coral border-b-2 border-coral 
-                      rounded-t-lg rounded-b-none hover:bg-coral/20 transition-all"
+        {/* Mobile menu */}
+        {isOpen && (
+          <div className="sm:hidden">
+            <div className="pt-2 pb-3 space-y-1 bg-white border-b border-gray-100">
+              {user ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
                   >
-                    Sign Out
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/features"
-                  className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
-                >
-                  Features
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href="/about"
-                  className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
-                >
-                  About
-                </Link>
-                <div className="px-4 py-2 space-y-2">
-                  <button
-                    onClick={handleSignIn}
-                    className="w-full px-4 py-2 text-gray-600 hover:text-coral transition-all"
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/campaigns"
+                    className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
                   >
-                    Sign In
-                  </button>
-                  <button
-                    onClick={handleSignUp}
-                    className="w-full px-4 py-2 bg-coral/10 text-coral border-b-2 border-coral 
-                      rounded-t-lg rounded-b-none hover:bg-coral/20 transition-all"
+                    Campaigns
+                  </Link>
+                  <Link
+                    href="/analytics"
+                    className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
                   >
-                    Sign Up
-                  </button>
-                </div>
-              </>
-            )}
+                    Analytics
+                  </Link>
+                  <div className="px-4 py-2">
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full px-4 py-2 bg-coral/10 text-coral border-b-2 border-coral 
+                        rounded-t-lg rounded-b-none hover:bg-coral/20 transition-all"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/features"
+                    className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
+                  >
+                    Features
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
+                  >
+                    Pricing
+                  </Link>
+                  <Link
+                    href="/about"
+                    className="block px-4 py-2 text-gray-600 hover:text-coral hover:bg-gray-50"
+                  >
+                    About
+                  </Link>
+                  <div className="px-4 py-2 space-y-2">
+                    <button
+                      onClick={handleSignIn}
+                      className="w-full px-4 py-2 text-gray-600 hover:text-coral transition-all"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={handleSignUp}
+                      className="w-full px-4 py-2 bg-coral/10 text-coral border-b-2 border-coral 
+                        rounded-t-lg rounded-b-none hover:bg-coral/20 transition-all"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </nav>
   );
 }

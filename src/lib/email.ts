@@ -15,26 +15,34 @@ type EmailTemplate =
   | 'password-reset' 
   | 'email-verification';
 
-const templates: Record<EmailTemplate, string> = {
-  'welcome-business': 'd-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with your business welcome template ID
-  'welcome-marketer': 'd-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // Replace with your marketer welcome template ID
-  'password-reset': 'd-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-  'email-verification': 'd-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+interface ContactData {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  userType: 'business' | 'marketer';
+  customFields?: Record<string, string>;
+}
+
+const lists = {
+  businessOnboarding: process.env.SENDGRID_BUSINESS_LIST_ID || 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', 
+  marketerOnboarding: process.env.SENDGRID_MARKETER_LIST_ID || 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', 
 };
 
-// SendGrid List IDs
-const lists = {
-  businessOnboarding: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', // Replace with your business list ID
-  marketerOnboarding: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', // Replace with your marketer list ID
+const templates: Record<EmailTemplate, string> = {
+  'welcome-business': 'd-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
+  'welcome-marketer': 'd-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
+  'password-reset': 'd-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  'email-verification': 'd-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
 };
 
 interface SendEmailOptions {
   to: string;
   template: EmailTemplate;
-  dynamicData?: Record<string, any>;
+  dynamicData?: Record<string, string>;
 }
 
-export async function sendEmail({ to, template, dynamicData = {} }: SendEmailOptions) {
+export async function sendEmail({ to, template, dynamicData = {} }: SendEmailOptions): Promise<boolean> {
   try {
     const msg = {
       to,
@@ -56,16 +64,7 @@ export async function sendEmail({ to, template, dynamicData = {} }: SendEmailOpt
   }
 }
 
-interface ContactData {
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  company?: string;
-  userType: 'business' | 'marketer';
-  customFields?: Record<string, any>;
-}
-
-export async function addContactToList(contactData: ContactData) {
+export async function addContactToList(contactData: ContactData): Promise<boolean> {
   try {
     const listId = contactData.userType === 'business' 
       ? lists.businessOnboarding 
@@ -98,7 +97,7 @@ export async function addContactToList(contactData: ContactData) {
 }
 
 // Helper functions for specific email types
-export async function sendBusinessWelcomeEmail(email: string, name: string, company: string) {
+export async function sendBusinessWelcomeEmail(email: string, name: string, company: string): Promise<boolean> {
   await Promise.all([
     sendEmail({
       to: email,
@@ -123,9 +122,10 @@ export async function sendBusinessWelcomeEmail(email: string, name: string, comp
       },
     }),
   ]);
+  return true;
 }
 
-export async function sendMarketerWelcomeEmail(email: string, name: string, expertise: string[]) {
+export async function sendMarketerWelcomeEmail(email: string, name: string, expertise: string[]): Promise<boolean> {
   await Promise.all([
     sendEmail({
       to: email,
@@ -146,24 +146,25 @@ export async function sendMarketerWelcomeEmail(email: string, name: string, expe
       customFields: {
         onboarding_stage: 'welcome',
         signup_date: new Date().toISOString(),
-        expertise: expertise,
+        expertise: expertise.join(', '),
       },
     }),
   ]);
+  return true;
 }
 
-export async function sendPasswordResetEmail(email: string, resetUrl: string) {
+export async function sendPasswordResetEmail(email: string, resetUrl: string): Promise<boolean> {
   return sendEmail({
     to: email,
     template: 'password-reset',
     dynamicData: {
       resetUrl,
-      expiryHours: 24,
+      expiryHours: '24',
     },
   });
 }
 
-export async function sendVerificationEmail(email: string, verificationUrl: string) {
+export async function sendVerificationEmail(email: string, verificationUrl: string): Promise<boolean> {
   return sendEmail({
     to: email,
     template: 'email-verification',

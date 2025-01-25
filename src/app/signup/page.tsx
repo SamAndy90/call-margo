@@ -1,86 +1,86 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-type SignUpStep = 'account' | 'profile' | 'details';
-type UserType = 'business' | 'marketer';
-
-interface BusinessInfo {
-  companyName: string;
-  industry: string;
-  size: string;
-}
+import { useAuth } from '@/hooks/useAuth';
 
 interface MarketerInfo {
   expertise: string[];
   yearsExperience: string;
 }
 
+interface BusinessInfo {
+  companyName: string;
+  industry: string;
+}
+
+type UserType = 'business' | 'marketer';
+type SignupStep = 'account' | 'profile' | 'details';
+
 export default function SignUp() {
-  const [currentStep, setCurrentStep] = useState<SignUpStep>('account');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [userType, setUserType] = useState<UserType>('business');
-  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
-    companyName: '',
-    industry: '',
-    size: '',
-  });
+  const [currentStep, setCurrentStep] = useState<SignupStep>('account');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const [marketerInfo, setMarketerInfo] = useState<MarketerInfo>({
     expertise: [],
     yearsExperience: '',
   });
-  const [error, setError] = useState('');
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+    companyName: '',
+    industry: '',
+  });
   const { signUp } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
     if (currentStep !== 'details') {
       moveToNextStep();
       return;
     }
 
     try {
-      await signUp({
-        email,
-        password,
-        name,
-        userType,
-        ...(userType === 'business' 
-          ? { company: businessInfo.companyName }
-          : { expertise: marketerInfo.expertise }
-        ),
-      });
-      router.push('/dashboard');
-    } catch (error) {
-      setError('Error creating account. Please try again.');
+      const { error: signUpError } = await signUp(email, password);
+      if (signUpError) {
+        setMessage('Error creating account. Please try again.');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch {
+      setMessage('An unexpected error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
   const moveToNextStep = () => {
     if (currentStep === 'account') {
       if (!email || !password) {
-        setError('Please fill in all fields');
+        setMessage('Please fill in all fields');
         return;
       }
       if (password.length < 6) {
-        setError('Password must be at least 6 characters');
+        setMessage('Password must be at least 6 characters');
         return;
       }
       setCurrentStep('profile');
     } else if (currentStep === 'profile') {
       if (!name) {
-        setError('Please enter your name');
+        setMessage('Please enter your name');
         return;
       }
       setCurrentStep('details');
     }
-    setError('');
+    setMessage('');
   };
 
   const handleExpertiseChange = (expertise: string) => {
@@ -121,6 +121,19 @@ export default function SignUp() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="mt-1 block w-full rounded-t-lg border-0 py-3 px-4 text-gray-900 ring-1 ring-inset ring-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-coral"
+                />
+              </div>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="mt-1 block w-full rounded-t-lg border-0 py-3 px-4 text-gray-900 ring-1 ring-inset ring-gray-100 placeholder:text-gray-400 focus:ring-2 focus:ring-coral"
                 />
               </div>
@@ -211,24 +224,6 @@ export default function SignUp() {
                 <option value="other">Other</option>
               </select>
             </div>
-            <div>
-              <label htmlFor="size" className="block text-sm font-medium text-gray-700">
-                Company Size
-              </label>
-              <select
-                id="size"
-                required
-                value={businessInfo.size}
-                onChange={(e) => setBusinessInfo({ ...businessInfo, size: e.target.value })}
-                className="mt-1 block w-full rounded-t-lg border-0 py-3 px-4 text-gray-900 ring-1 ring-inset ring-gray-100 focus:ring-2 focus:ring-coral"
-              >
-                <option value="">Select company size</option>
-                <option value="1-10">1-10 employees</option>
-                <option value="11-50">11-50 employees</option>
-                <option value="51-200">51-200 employees</option>
-                <option value="201+">201+ employees</option>
-              </select>
-            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -297,15 +292,16 @@ export default function SignUp() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {renderStep()}
 
-          {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+          {message && <div className="text-red-500 text-sm text-center">{message}</div>}
 
           <div>
             <button
               type="submit"
+              disabled={loading}
               className="group relative flex w-full justify-center px-6 py-3 bg-coral/10 text-coral border-b-2 border-coral 
                 rounded-t-lg rounded-b-none hover:bg-coral/20 transition-all"
             >
-              {currentStep === 'details' ? 'Create Account' : 'Continue'}
+              {loading ? 'Creating account...' : currentStep === 'details' ? 'Create account' : 'Next'}
             </button>
           </div>
 
