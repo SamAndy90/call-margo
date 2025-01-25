@@ -25,9 +25,17 @@ export default function DashboardLayout({
 
   useEffect(() => {
     setMounted(true);
-    // Remove any inline styles that might cause hydration issues
+    // Clean up any dynamic styles that might cause hydration issues
     const root = document.documentElement;
     root.style.removeProperty('--ro-scrollbar-height');
+    
+    // Remove Grammarly attributes if they exist
+    document.querySelectorAll('[data-gr-ext-installed]').forEach(el => {
+      el.removeAttribute('data-gr-ext-installed');
+    });
+    document.querySelectorAll('[data-new-gr-c-s-check-loaded]').forEach(el => {
+      el.removeAttribute('data-new-gr-c-s-check-loaded');
+    });
   }, []);
 
   // Basic skeleton for SSR
@@ -52,14 +60,14 @@ export default function DashboardLayout({
       <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
         <div className="flex min-h-0 flex-1 flex-col bg-white">
           <div className="flex h-16 flex-shrink-0 items-center justify-center px-4 border-b">
-            <div className="w-full px-2">
+            <div className="relative w-full h-8 px-2">
               <Image 
                 src="/images/margo-logo.svg"
                 alt="Margo"
-                width={120}
-                height={32}
-                className="w-full h-5 object-contain"
+                fill
+                className="object-contain"
                 priority
+                sizes="(max-width: 768px) 100vw, 200px"
               />
             </div>
           </div>
@@ -109,14 +117,14 @@ export default function DashboardLayout({
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
           <div className="flex h-16 flex-shrink-0 items-center justify-center px-4 border-b">
-            <div className="w-full px-2">
+            <div className="relative w-full h-8 px-2">
               <Image 
                 src="/images/margo-logo.svg"
                 alt="Margo"
-                width={120}
-                height={32}
-                className="w-full h-5 object-contain"
+                fill
+                className="object-contain"
                 priority
+                sizes="(max-width: 768px) 100vw, 200px"
               />
             </div>
           </div>
