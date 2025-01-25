@@ -131,6 +131,17 @@ interface CompetitorProfile {
   updated_at?: Date;
 }
 
+interface MarketData {
+  id?: string;
+  user_id: string;
+  industry: string;
+  market_category: string;
+  key_players: string;
+  company_advantages: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
 interface UpdateResponse {
   data: CompetitorProfile | null;
   error: PostgrestError | null;
@@ -142,7 +153,7 @@ const tabs = [
   { name: 'Channels', href: '#channels' },
   { name: 'Audience', href: '#audience' },
   { name: 'Products', href: '#products' },
-  { name: 'Competitors', href: '#competitors' },
+  { name: 'Market', href: '#market' },
   { name: 'Tech Stack', href: '#tech-stack' },
 ];
 
@@ -175,7 +186,7 @@ function MarketingArchitectureContent() {
     logo_usage: '',
   });
   const [audienceProfiles, setAudienceProfiles] = useState<AudienceProfile[]>([]);
-  const [selectedAudienceId, setSelectedAudienceId] = useState<string | null>(null);
+  const [selectedAudienceId, setSelectedAudienceId] = useState<string | undefined>(undefined);
   const [productProfiles, setProductProfiles] = useState<ProductProfile[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>();
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -184,12 +195,20 @@ function MarketingArchitectureContent() {
   const [selectedCompetitorId, setSelectedCompetitorId] = useState<string>();
   const [isCompetitorModalOpen, setIsCompetitorModalOpen] = useState(false);
   const [newCompetitorProfile, setNewCompetitorProfile] = useState<Partial<CompetitorProfile>>({});
+  const [marketData, setMarketData] = useState<MarketData>({
+    user_id: '',
+    industry: '',
+    market_category: '',
+    key_players: '',
+    company_advantages: ''
+  });
   const { user } = useUser();
 
   useEffect(() => {
     if (user?.id) {
       setCompanyData(prev => ({ ...prev, user_id: user.id }));
       setBrandData(prev => ({ ...prev, user_id: user.id }));
+      setMarketData(prev => ({ ...prev, user_id: user.id }));
     }
   }, [user?.id]);
 
@@ -353,16 +372,15 @@ function MarketingArchitectureContent() {
       console.log('Successfully fetched all team members:', allMembers);
       setTeamMembers(allMembers || []);
 
-    } catch (error: any) {
-      console.error('Team members operation failed:', {
-        error,
-        message: error.message,
-        name: error.name,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        stack: error.stack
-      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Team members operation failed:', {
+          message: error.message,
+          name: error.name
+        });
+      } else {
+        console.error('An unknown error occurred:', error);
+      }
       setTeamMembers([]); // Reset to empty array on error
     }
   }, [user, companyData]);
@@ -415,8 +433,15 @@ function MarketingArchitectureContent() {
 
         setTeamMembers(prev => [...prev, newMember]);
       }
-    } catch (error) {
-      console.error('Error saving team member:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('Error saving team member:', {
+          message: error.message,
+          name: error.name
+        });
+      } else {
+        console.error('An unknown error occurred:', error);
+      }
     }
 
     setSelectedTeamMember(undefined);
@@ -606,7 +631,7 @@ function MarketingArchitectureContent() {
         
         if (newProfile) {
           setAudienceProfiles([newProfile]);
-          setSelectedAudienceId(newProfile.id);
+          setSelectedAudienceId(newProfile.id || undefined);
         }
       } else {
         setAudienceProfiles(profiles.map(profile => ({
@@ -623,7 +648,7 @@ function MarketingArchitectureContent() {
         
         // Select the first profile by default if none is selected
         if (!selectedAudienceId && profiles.length > 0) {
-          setSelectedAudienceId(profiles[0].id);
+          setSelectedAudienceId(profiles[0].id || undefined);
         }
       }
     } catch (error: unknown) {
@@ -670,8 +695,8 @@ function MarketingArchitectureContent() {
           setSelectedProductId(profiles[0].id);
         }
       }
-    } catch (error) {
-      console.error('Error fetching product profiles:', error);
+    } catch (error: unknown) {
+      console.error('Error fetching product profiles:', error instanceof Error ? error.message : String(error));
     }
   }, [user?.id, selectedProductId]);
 
@@ -715,20 +740,24 @@ function MarketingArchitectureContent() {
     }
   };
 
-  const handleAudienceProfileChange = async (profileId: string, field: keyof AudienceProfile, value: string | string[]) => {
-    const profile = audienceProfiles.find(p => p.id === profileId);
-    if (!profile) return;
+  const handleAudienceProfileChange = async (
+    profileId: string | undefined,
+    field: keyof AudienceProfile,
+    value: string | string[]
+  ) => {
+    if (!profileId) return;
 
     try {
-      const updatedProfile = { ...profile, [field]: value };
-      setAudienceProfiles(prev => prev.map(p => p.id === profileId ? updatedProfile : p));
-
       const { error } = await supabase
         .from('audience_profiles')
         .update({ [field]: value })
         .eq('id', profileId);
 
       if (error) throw error;
+
+      setAudienceProfiles(prev => prev.map(p => 
+        p.id === profileId ? { ...p, [field]: value } : p
+      ));
     } catch (error: unknown) {
       console.error('Error updating audience profile:', error instanceof Error ? error.message : String(error));
     }
@@ -760,8 +789,8 @@ function MarketingArchitectureContent() {
           return profile;
         }));
       }
-    } catch (error) {
-      console.error('Error adding voice of customer:', error);
+    } catch (error: unknown) {
+      console.error('Error adding voice of customer:', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -792,8 +821,8 @@ function MarketingArchitectureContent() {
           return profile;
         }));
       }
-    } catch (error) {
-      console.error('Error adding note:', error);
+    } catch (error: unknown) {
+      console.error('Error adding note:', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -824,14 +853,16 @@ function MarketingArchitectureContent() {
 
       if (newProfile) {
         setAudienceProfiles([...audienceProfiles, newProfile]);
-        setSelectedAudienceId(newProfile.id);
+        setSelectedAudienceId(newProfile.id || undefined);
       }
     } catch (error: unknown) {
       console.error('Error creating audience profile:', error instanceof Error ? error.message : String(error));
     }
   };
 
-  const handleArchiveAudienceProfile = async (profileId: string) => {
+  const handleArchiveAudienceProfile = async (profileId?: string) => {
+    if (!profileId) return;
+    
     try {
       const { error } = await supabase
         .from('audience_profiles')
@@ -842,14 +873,16 @@ function MarketingArchitectureContent() {
 
       setAudienceProfiles(audienceProfiles.filter(p => p.id !== profileId));
       if (selectedAudienceId === profileId) {
-        setSelectedAudienceId(null);
+        setSelectedAudienceId(undefined);
       }
     } catch (error: unknown) {
       console.error('Error archiving audience profile:', error instanceof Error ? error.message : String(error));
     }
   };
 
-  const handleDeleteAudienceProfile = async (profileId: string) => {
+  const handleDeleteAudienceProfile = async (profileId?: string) => {
+    if (!profileId) return;
+
     try {
       const { error } = await supabase
         .from('audience_profiles')
@@ -860,7 +893,7 @@ function MarketingArchitectureContent() {
 
       setAudienceProfiles(audienceProfiles.filter(p => p.id !== profileId));
       if (selectedAudienceId === profileId) {
-        setSelectedAudienceId(null);
+        setSelectedAudienceId(undefined);
       }
     } catch (error: unknown) {
       console.error('Error deleting audience profile:', error instanceof Error ? error.message : String(error));
@@ -886,8 +919,8 @@ function MarketingArchitectureContent() {
       setSelectedProductId(newProfile.id);
       setIsProductModalOpen(false);
       setNewProductProfile({});
-    } catch (error) {
-      console.error('Error saving product profile:', error);
+    } catch (error: unknown) {
+      console.error('Error saving product profile:', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -902,131 +935,188 @@ function MarketingArchitectureContent() {
     // TODO: Add proper error handling UI feedback
   };
 
-  useEffect(() => {
-    fetchCompanyData();
-    fetchBrandData();
-    fetchAudienceProfiles();
-  }, [fetchCompanyData, fetchBrandData, fetchAudienceProfiles]);
+  const fetchCompetitors = useCallback(async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('competitors')
+        .select('*')
+        .eq('user_id', user.id);
 
-  const handleCreateCompetitor = async () => {
+      if (error) throw error;
+      setCompetitors(data || []);
+    } catch (error: unknown) {
+      console.error('Error fetching competitors:', error instanceof Error ? error.message : String(error));
+    }
+  }, [user?.id]);
+
+  const fetchMarketData = useCallback(async () => {
+    if (!user?.id) {
+      console.log('No user ID available');
+      return;
+    }
+    
+    try {
+      console.log('Fetching market data for user:', user.id);
+      const { data, error } = await supabase
+        .from('market_data')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.log('Initial fetch error:', error);
+        if (error.code === 'PGRST116') { // No data found
+          console.log('No existing market data, creating new entry');
+          const { data: newData, error: insertError } = await supabase
+            .from('market_data')
+            .insert([{
+              user_id: user.id,
+              industry: '',
+              market_category: '',
+              key_players: '',
+              company_advantages: ''
+            }])
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('Error inserting new market data:', insertError);
+            throw insertError;
+          }
+          if (newData) {
+            console.log('Successfully created new market data:', newData);
+            setMarketData(newData);
+          }
+        } else {
+          console.error('Unexpected error:', error);
+          throw error;
+        }
+      } else if (data) {
+        console.log('Successfully fetched existing market data:', data);
+        setMarketData(data);
+      }
+    } catch (error: unknown) {
+      console.error('Error in fetchMarketData:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        });
+      } else {
+        console.error('Non-Error object thrown:', error);
+      }
+    }
+  }, [user?.id]);
+
+  const handleMarketDataChange = useCallback(async (field: keyof MarketData, value: string) => {
     if (!user?.id) return;
 
     try {
-      const { data: competitor, error } = await supabase
-        .from('competitors')
-        .insert([
-          {
-            ...newCompetitorProfile,
-            user_id: user.id,
-            social_accounts: newCompetitorProfile.social_accounts || {},
-          },
-        ])
+      setMarketData(prev => ({ ...prev, [field]: value }));
+
+      const { error } = await supabase
+        .from('market_data')
+        .upsert({
+          user_id: user.id,
+          [field]: value,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating market data:', error);
+    }
+  }, [user?.id]);
+
+  const testMarketDataOperations = useCallback(async () => {
+    if (!user?.id) {
+      console.log('No user ID available for testing');
+      return;
+    }
+
+    try {
+      console.log('=== Starting Market Data Operations Test ===');
+      
+      // Test 1: Select
+      console.log('Test 1: Selecting market data');
+      const { data: selectData, error: selectError } = await supabase
+        .from('market_data')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (selectError) {
+        console.error('Select Test Failed:', selectError);
+      } else {
+        console.log('Select Test Passed:', selectData);
+      }
+
+      // Test 2: Insert
+      console.log('Test 2: Inserting market data');
+      const testData = {
+        user_id: user.id,
+        industry: 'Test Industry',
+        market_category: 'Test Category',
+        key_players: 'Test Players',
+        company_advantages: 'Test Advantages'
+      };
+
+      const { data: insertData, error: insertError } = await supabase
+        .from('market_data')
+        .insert([testData])
         .select()
         .single();
 
-      if (error) throw error;
-
-      setCompetitors((prev) => [...prev, competitor]);
-      setIsCompetitorModalOpen(false);
-      setNewCompetitorProfile({});
-    } catch (error) {
-      console.error('Error creating competitor:', error);
-    }
-  };
-
-  const handleEditCompetitor = (competitor: CompetitorProfile) => {
-    setNewCompetitorProfile(competitor);
-    setIsCompetitorModalOpen(true);
-  };
-
-  const handleUpdateCompetitor = async (competitorId: string, updates: Partial<CompetitorProfile>): Promise<void> => {
-    try {
-      const { error }: UpdateResponse = await supabase
-        .from('competitors')
-        .update(updates)
-        .eq('id', competitorId);
-
-      if (error) {
-        handleError(error);
-        return;
+      if (insertError) {
+        console.error('Insert Test Failed:', insertError);
+      } else {
+        console.log('Insert Test Passed:', insertData);
       }
 
-      // Refresh competitors list
-      const loadCompetitors = async () => {
-        if (!user?.id) return;
+      // Test 3: Update
+      if (insertData?.id) {
+        console.log('Test 3: Updating market data');
+        const { data: updateData, error: updateError } = await supabase
+          .from('market_data')
+          .update({ industry: 'Updated Industry' })
+          .eq('id', insertData.id)
+          .select()
+          .single();
 
-        try {
-          const { data, error } = await supabase
-            .from('competitors')
-            .select('*')
-            .eq('user_id', user.id);
-
-          if (error) {
-            handleError(error);
-            return;
-          }
-
-          setCompetitors(data || []);
-        } catch (error) {
-          if (error instanceof Error) {
-            console.error('Error loading competitors:', error.message);
-          }
+        if (updateError) {
+          console.error('Update Test Failed:', updateError);
+        } else {
+          console.log('Update Test Passed:', updateData);
         }
-      };
-
-      loadCompetitors();
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error('Error updating competitor:', error.message);
       }
-    }
-  };
 
-  const handleDeleteCompetitor = async (competitorId: string) => {
-    try {
-      const { error } = await supabase.from('competitors').delete().eq('id', competitorId);
-
-      if (error) throw error;
-
-      setCompetitors((prev) => prev.filter((c) => c.id !== competitorId));
-      setSelectedCompetitorId(undefined);
+      console.log('=== Market Data Operations Test Complete ===');
     } catch (error) {
-      console.error('Error deleting competitor:', error);
+      console.error('Test failed with error:', error);
     }
-  };
-
-  const handleCompetitorChange = (field: keyof CompetitorProfile, value: string | string[] | boolean | { [key: string]: string }) => {
-    if (!selectedCompetitorId) return;
-
-    const updates = { [field]: value };
-    handleUpdateCompetitor(selectedCompetitorId, updates);
-  };
+  }, [user?.id]);
 
   useEffect(() => {
-    const loadCompetitors = async () => {
-      if (!user?.id) return;
+    if (user?.id) {
+      testMarketDataOperations();
+    }
+  }, [testMarketDataOperations, user?.id]);
 
-      try {
-        const { data, error } = await supabase
-          .from('competitors')
-          .select('*')
-          .eq('user_id', user.id);
-
-        if (error) {
-          handleError(error);
-          return;
-        }
-
-        setCompetitors(data || []);
-      } catch (error) {
-        if (error instanceof Error) {
-          console.error('Error loading competitors:', error.message);
-        }
-      }
-    };
-
-    loadCompetitors();
-  }, [user?.id]);
+  useEffect(() => {
+    if (user?.id) {
+      fetchCompanyData();
+      fetchBrandData();
+      fetchAudienceProfiles();
+      fetchProductProfiles();
+      fetchCompetitors();
+      fetchMarketData();
+    }
+  }, [user?.id, fetchCompanyData, fetchBrandData, fetchAudienceProfiles, fetchProductProfiles, fetchCompetitors, fetchMarketData]);
 
   // Initialize state with empty arrays and strings
   const defaultAudienceProfile: AudienceProfile = {
@@ -1056,6 +1146,81 @@ function MarketingArchitectureContent() {
   const selectedProfile = selectedAudienceId 
     ? audienceProfiles.find(p => p.id === selectedAudienceId) || currentAudienceProfile
     : currentAudienceProfile;
+
+  const handleCreateCompetitor = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data: competitor, error } = await supabase
+        .from('competitors')
+        .insert([
+          {
+            ...newCompetitorProfile,
+            user_id: user.id,
+            social_accounts: newCompetitorProfile.social_accounts || {},
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCompetitors((prev) => [...prev, competitor]);
+      setIsCompetitorModalOpen(false);
+      setNewCompetitorProfile({});
+    } catch (error: unknown) {
+      console.error('Error creating competitor:', error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleEditCompetitor = (competitor: CompetitorProfile) => {
+    setNewCompetitorProfile(competitor);
+    setIsCompetitorModalOpen(true);
+  };
+
+  const handleUpdateCompetitor = async (competitorId: string, updates: Partial<CompetitorProfile>): Promise<void> => {
+    try {
+      const { error }: UpdateResponse = await supabase
+        .from('competitors')
+        .update(updates)
+        .eq('id', competitorId);
+
+      if (error) {
+        handleError(error);
+        return;
+      }
+
+      // Refresh the competitors list
+      fetchCompetitors();
+    } catch (error: unknown) {
+      console.error('Error updating competitor:', error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleDeleteCompetitor = async (competitorId: string) => {
+    if (!competitorId) return;
+
+    try {
+      const { error } = await supabase
+        .from('competitors')
+        .delete()
+        .eq('id', competitorId);
+
+      if (error) throw error;
+
+      setCompetitors((prev) => prev.filter((c) => c.id !== competitorId));
+      setSelectedCompetitorId(undefined);
+    } catch (error: unknown) {
+      console.error('Error deleting competitor:', error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleCompetitorChange = (field: keyof CompetitorProfile, value: string | string[] | boolean | { [key: string]: string }) => {
+    if (!selectedCompetitorId) return;
+
+    const updates = { [field]: value };
+    handleUpdateCompetitor(selectedCompetitorId, updates);
+  };
 
   return (
     <div className="px-4 sm:px-6 lg:px-8">
@@ -1096,23 +1261,24 @@ function MarketingArchitectureContent() {
                   id="companyName"
                   placeholder="Enter your company name"
                   value={companyData.name}
-                  onChange={(newValue) => handleCompanyDataChange('name', newValue)}
+                  onChange={(value) => handleCompanyDataChange('name', value)}
                 />
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <FormField
                     label="Founded"
                     id="founded"
-                    type="date"
+                    type="text"
+                    placeholder="YYYY-MM-DD"
                     value={companyData.founded}
-                    onChange={(newValue) => handleCompanyDataChange('founded', newValue)}
+                    onChange={(value) => handleCompanyDataChange('founded', value)}
                   />
                   <FormField
                     label="Website"
                     id="website"
-                    type="url"
+                    type="text"
                     placeholder="https://example.com"
                     value={companyData.website}
-                    onChange={(newValue) => handleCompanyDataChange('website', newValue)}
+                    onChange={(value) => handleCompanyDataChange('website', value)}
                   />
                 </div>
                 <FormField
@@ -1121,7 +1287,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="Brief description of your company"
                   value={companyData.description}
-                  onChange={(newValue) => handleCompanyDataChange('description', newValue)}
+                  onChange={(value) => handleCompanyDataChange('description', value)}
                 />
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <FormField
@@ -1130,7 +1296,7 @@ function MarketingArchitectureContent() {
                     type="textarea"
                     placeholder="Your company's mission"
                     value={companyData.mission}
-                    onChange={(newValue) => handleCompanyDataChange('mission', newValue)}
+                    onChange={(value) => handleCompanyDataChange('mission', value)}
                   />
                   <FormField
                     label="Vision"
@@ -1138,7 +1304,7 @@ function MarketingArchitectureContent() {
                     type="textarea"
                     placeholder="Your company's vision"
                     value={companyData.vision}
-                    onChange={(newValue) => handleCompanyDataChange('vision', newValue)}
+                    onChange={(value) => handleCompanyDataChange('vision', value)}
                   />
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -1148,7 +1314,7 @@ function MarketingArchitectureContent() {
                     type="textarea"
                     placeholder="List your company's strengths"
                     value={companyData.strengths}
-                    onChange={(newValue) => handleCompanyDataChange('strengths', newValue)}
+                    onChange={(value) => handleCompanyDataChange('strengths', value)}
                   />
                   <FormField
                     label="Weaknesses"
@@ -1156,7 +1322,7 @@ function MarketingArchitectureContent() {
                     type="textarea"
                     placeholder="List areas for improvement"
                     value={companyData.weaknesses}
-                    onChange={(newValue) => handleCompanyDataChange('weaknesses', newValue)}
+                    onChange={(value) => handleCompanyDataChange('weaknesses', value)}
                   />
                 </div>
                 <FormField
@@ -1165,7 +1331,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="What makes your company unique?"
                   value={companyData.differentiators}
-                  onChange={(newValue) => handleCompanyDataChange('differentiators', newValue)}
+                  onChange={(value) => handleCompanyDataChange('differentiators', value)}
                 />
 
                 {/* Team Members Section */}
@@ -1234,14 +1400,14 @@ function MarketingArchitectureContent() {
                 id="brandName"
                 placeholder="Enter your brand name"
                 value={brandData.brand_name}
-                onChange={(newValue) => handleBrandDataChange('brand_name', newValue)}
+                onChange={(value) => handleBrandDataChange('brand_name', value)}
               />
               <FormField
                 label="Tagline"
                 id="tagline"
                 placeholder="Your brand's tagline or slogan"
                 value={brandData.tagline}
-                onChange={(newValue) => handleBrandDataChange('tagline', newValue)}
+                onChange={(value) => handleBrandDataChange('tagline', value)}
               />
               <FormField
                 label="Brand Values"
@@ -1249,7 +1415,7 @@ function MarketingArchitectureContent() {
                 type="textarea"
                 placeholder="List your brand's core values"
                 value={brandData.values}
-                onChange={(newValue) => handleBrandDataChange('values', newValue)}
+                onChange={(value) => handleBrandDataChange('values', value)}
               />
               <FormField
                 label="Voice and Tone"
@@ -1257,7 +1423,7 @@ function MarketingArchitectureContent() {
                 type="textarea"
                 placeholder="Describe your brand's voice and tone"
                 value={brandData.voice_tone}
-                onChange={(newValue) => handleBrandDataChange('voice_tone', newValue)}
+                onChange={(value) => handleBrandDataChange('voice_tone', value)}
               />
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
@@ -1266,7 +1432,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="Describe your visual identity guidelines"
                   value={brandData.visual_identity}
-                  onChange={(newValue) => handleBrandDataChange('visual_identity', newValue)}
+                  onChange={(value) => handleBrandDataChange('visual_identity', value)}
                 />
                 <FormField
                   label="Color Palette"
@@ -1274,7 +1440,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="List your brand colors and their usage"
                   value={brandData.color_palette}
-                  onChange={(newValue) => handleBrandDataChange('color_palette', newValue)}
+                  onChange={(value) => handleBrandDataChange('color_palette', value)}
                 />
               </div>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -1284,7 +1450,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="Describe your brand's typography"
                   value={brandData.typography}
-                  onChange={(newValue) => handleBrandDataChange('typography', newValue)}
+                  onChange={(value) => handleBrandDataChange('typography', value)}
                 />
                 <FormField
                   label="Logo Usage"
@@ -1292,7 +1458,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="Guidelines for logo usage"
                   value={brandData.logo_usage}
-                  onChange={(newValue) => handleBrandDataChange('logo_usage', newValue)}
+                  onChange={(value) => handleBrandDataChange('logo_usage', value)}
                 />
               </div>
             </Tab.Panel>
@@ -1318,7 +1484,7 @@ function MarketingArchitectureContent() {
                   <button
                     onClick={handleCreateAudienceProfile}
                     type="button"
-                    className="inline-flex items-center rounded-md bg-coral-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
+                    className="inline-flex items-center rounded-md bg-[#d06e63] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d06e63]"
                   >
                     <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5 text-white" aria-hidden="true" />
                     New Profile
@@ -1347,7 +1513,7 @@ function MarketingArchitectureContent() {
                     </div>
                     <div 
                       className="min-w-0 flex-1 cursor-pointer"
-                      onClick={() => setSelectedAudienceId(profile.id)}
+                      onClick={() => setSelectedAudienceId(profile.id || undefined)}
                     >
                       <p className="text-sm font-medium text-gray-900">{profile.name}</p>
                       <p className="truncate text-sm text-gray-500">{profile.description || 'No description'}</p>
@@ -1374,7 +1540,7 @@ function MarketingArchitectureContent() {
                             <Menu.Item>
                               {({ active }) => (
                                 <button
-                                  onClick={() => setSelectedAudienceId(profile.id)}
+                                  onClick={() => setSelectedAudienceId(profile.id || undefined)}
                                   className={classNames(
                                     active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                                     'block w-full px-4 py-2 text-left text-sm'
@@ -1402,8 +1568,8 @@ function MarketingArchitectureContent() {
                                 <button
                                   onClick={() => handleDeleteAudienceProfile(profile.id)}
                                   className={classNames(
-                                    active ? 'bg-gray-100 text-red-900' : 'text-red-700',
-                                    'block w-full px-4 py-2 text-left text-sm'
+                                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                    'block w-full px-4 py-2 text-left text-sm text-red-600'
                                   )}
                                 >
                                   Delete
@@ -1422,7 +1588,11 @@ function MarketingArchitectureContent() {
                 <div className="mt-6">
                   <AudienceProfileDetails
                     profile={selectedProfile}
-                    onProfileChange={(field, value) => handleAudienceProfileChange(selectedAudienceId, field, value)}
+                    onProfileChange={(field, value) => {
+                      // Only pass string or string[] values
+                      if (typeof value === 'boolean') return;
+                      handleAudienceProfileChange(selectedAudienceId, field, value);
+                    }}
                     onAddVoiceOfCustomer={(data) => handleAddVoiceOfCustomer(selectedAudienceId, data)}
                     onAddNote={(data) => handleAddNote(selectedAudienceId, data)}
                   />
@@ -1431,16 +1601,24 @@ function MarketingArchitectureContent() {
             </Tab.Panel>
 
             {/* Products Panel */}
-            <Tab.Panel className="space-y-8">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-medium text-gray-900">Product Profiles</h2>
-                <button
-                  onClick={() => setIsProductModalOpen(true)}
-                  style={{ backgroundColor: '#d06e63' }}
-                  className="btn text-white px-4 py-2 rounded-md hover:opacity-90"
-                >
-                  Add Profile
-                </button>
+            <Tab.Panel className="space-y-6">
+              <div className="border-b border-gray-200 pb-5 mb-8">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-base font-semibold leading-6 text-gray-900">Products</h2>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Create and manage your product profiles.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsProductModalOpen(true)}
+                    type="button"
+                    className="inline-flex items-center rounded-md bg-[#d06e63] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d06e63]"
+                  >
+                    <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5 text-white" aria-hidden="true" />
+                    Add Product
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1528,33 +1706,33 @@ function MarketingArchitectureContent() {
                           label="Product Name"
                           id="name"
                           value={profile.name}
-                          onChange={(newValue) => handleProductDataChange('name', newValue)}
+                          onChange={(value) => handleProductDataChange('name', value)}
                         />
                         <FormField
                           label="Type"
                           id="type"
                           value={profile.type}
-                          onChange={(newValue) => handleProductDataChange('type', newValue)}
+                          onChange={(value) => handleProductDataChange('type', value)}
                         />
                         <FormField
                           label="Purpose/Benefit"
                           id="purpose_benefit"
                           type="textarea"
                           value={profile.purpose_benefit}
-                          onChange={(newValue) => handleProductDataChange('purpose_benefit', newValue)}
+                          onChange={(value) => handleProductDataChange('purpose_benefit', value)}
                         />
                         <FormField
                           label="Description"
                           id="description"
                           type="textarea"
                           value={profile.description}
-                          onChange={(newValue) => handleProductDataChange('description', newValue)}
+                          onChange={(value) => handleProductDataChange('description', value)}
                         />
                         <FormField
                           label="Market Category"
                           id="market_category"
                           value={profile.market_category}
-                          onChange={(newValue) => handleProductDataChange('market_category', newValue)}
+                          onChange={(value) => handleProductDataChange('market_category', value)}
                         />
                       </div>
                     );
@@ -1590,33 +1768,33 @@ function MarketingArchitectureContent() {
                                     label="Product Name"
                                     id="name"
                                     value={newProductProfile.name || ''}
-                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, name: newValue }))}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, name: value }))}
                                   />
                                   <FormField
                                     label="Type"
                                     id="type"
                                     value={newProductProfile.type || ''}
-                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, type: newValue }))}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, type: value }))}
                                   />
                                   <FormField
                                     label="Purpose/Benefit"
                                     id="purpose_benefit"
                                     type="textarea"
                                     value={newProductProfile.purpose_benefit || ''}
-                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, purpose_benefit: newValue }))}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, purpose_benefit: value }))}
                                   />
                                   <FormField
                                     label="Description"
                                     id="description"
                                     type="textarea"
                                     value={newProductProfile.description || ''}
-                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, description: newValue }))}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, description: value }))}
                                   />
                                   <FormField
                                     label="Market Category"
                                     id="market_category"
                                     value={newProductProfile.market_category || ''}
-                                    onChange={(newValue) => setNewProductProfile(prev => ({ ...prev, market_category: newValue }))}
+                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, market_category: value }))}
                                   />
                                 </div>
                               </div>
@@ -1649,215 +1827,241 @@ function MarketingArchitectureContent() {
               </Transition.Root>
             </Tab.Panel>
 
-            {/* Competitors Panel */}
-            <Tab.Panel className="space-y-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Market Overview Section */}
-                <div className="space-y-6">
-                  <h2 className="text-lg font-medium text-gray-900">Market Overview</h2>
-                  <div className="space-y-4">
-                    <FormField
-                      label="Industry"
-                      id="industry"
-                      value={''}
-                      onChange={(newValue) => {}}
-                    />
-                    <FormField
-                      label="Overview of Key Players"
-                      id="key_players"
-                      type="textarea"
-                      value={''}
-                      onChange={(newValue) => {}}
-                    />
-                    <FormField
-                      label="Company Advantages"
-                      id="company_advantages"
-                      type="textarea"
-                      value={''}
-                      onChange={(newValue) => {}}
-                    />
+            {/* Market Panel */}
+            <Tab.Panel className="space-y-6">
+              {/* Market Overview Section */}
+              <div className="space-y-6">
+                <div className="border-b border-gray-200 pb-5">
+                  <h2 className="text-base font-semibold leading-6 text-gray-900">Market Overview</h2>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Understand your market position and industry landscape.
+                  </p>
+                </div>
+                <div className="bg-white shadow sm:rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <div className="grid grid-cols-1 gap-6">
+                      <FormField
+                        label="Industry"
+                        id="industry"
+                        placeholder="Enter your industry"
+                        value={marketData.industry}
+                        onChange={(value) => handleMarketDataChange('industry', value)}
+                      />
+                      <FormField
+                        label="Market Category"
+                        id="market_category"
+                        type="textarea"
+                        placeholder="Define your market category"
+                        value={marketData.market_category}
+                        onChange={(value) => handleMarketDataChange('market_category', value)}
+                      />
+                      <FormField
+                        label="Overview of Key Players"
+                        id="key_players"
+                        type="textarea"
+                        placeholder="Describe the key players in your market"
+                        value={marketData.key_players}
+                        onChange={(value) => handleMarketDataChange('key_players', value)}
+                      />
+                      <FormField
+                        label="Company Advantages"
+                        id="company_advantages"
+                        type="textarea"
+                        placeholder="List your company's competitive advantages"
+                        value={marketData.company_advantages}
+                        onChange={(value) => handleMarketDataChange('company_advantages', value)}
+                      />
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Competitor Profiles Section */}
-                <div className="space-y-6">
+              {/* Competitors Section */}
+              <div className="mt-8 space-y-6">
+                <div className="border-b border-gray-200 pb-5">
                   <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-medium text-gray-900">Competitor Profiles</h2>
+                    <div>
+                      <h2 className="text-base font-semibold leading-6 text-gray-900">Competitors</h2>
+                      <p className="mt-2 text-sm text-gray-500">
+                        Track and analyze your competitors.
+                      </p>
+                    </div>
                     <button
                       onClick={() => setIsCompetitorModalOpen(true)}
-                      style={{ backgroundColor: '#d06e63' }}
-                      className="btn text-white px-4 py-2 rounded-md hover:opacity-90"
+                      type="button"
+                      className="inline-flex items-center rounded-md bg-[#d06e63] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d06e63]"
                     >
+                      <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5 text-white" aria-hidden="true" />
                       Add Competitor
                     </button>
                   </div>
+                </div>
 
-                  <div className="space-y-4">
-                    {competitors.map((competitor) => (
-                      <div
-                        key={competitor.id}
-                        className={classNames(
-                          'relative rounded-lg border p-4 hover:border-gray-400',
-                          selectedCompetitorId === competitor.id ? 'border-gray-400' : 'border-gray-200'
-                        )}
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div
-                            className="min-w-0 flex-1 cursor-pointer"
-                            onClick={() => setSelectedCompetitorId(competitor.id)}
+                <div className="grid grid-cols-1 gap-4">
+                  {competitors.map((competitor) => (
+                    <div
+                      key={competitor.id}
+                      className={classNames(
+                        'relative rounded-lg border p-4 hover:border-gray-400',
+                        selectedCompetitorId === competitor.id ? 'border-gray-400' : 'border-gray-200'
+                      )}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div
+                          className="min-w-0 flex-1 cursor-pointer"
+                          onClick={() => setSelectedCompetitorId(competitor.id)}
+                        >
+                          <p className="text-sm font-medium text-gray-900">{competitor.name}</p>
+                          <p className="truncate text-sm text-gray-500">
+                            {competitor.description || 'No description'}
+                          </p>
+                        </div>
+                        <Menu as="div" className="relative inline-block text-left">
+                          <div>
+                            <Menu.Button className="flex items-center rounded-full p-2 bg-white hover:bg-teal-50">
+                              <span className="sr-only">Open options</span>
+                              <EllipsisVerticalIcon
+                                className="h-5 w-5"
+                                style={{ color: '#d06e63' }}
+                                aria-hidden="true"
+                              />
+                            </Menu.Button>
+                          </div>
+
+                          <Transition
+                            as={Fragment}
+                            enter="transition ease-out duration-100"
+                            enterFrom="transform opacity-0 scale-95"
+                            enterTo="transform opacity-100 scale-100"
+                            leave="transition ease-in duration-75"
+                            leaveFrom="transform opacity-100 scale-100"
+                            leaveTo="transform opacity-0 scale-95"
                           >
-                            <p className="text-sm font-medium text-gray-900">{competitor.name}</p>
-                            <p className="truncate text-sm text-gray-500">
-                              {competitor.description || 'No description'}
-                            </p>
-                          </div>
-                          <Menu as="div" className="relative inline-block text-left">
-                            <div>
-                              <Menu.Button className="flex items-center rounded-full p-2 bg-white hover:bg-teal-50">
-                                <span className="sr-only">Open options</span>
-                                <EllipsisVerticalIcon
-                                  className="h-5 w-5"
-                                  style={{ color: '#d06e63' }}
-                                  aria-hidden="true"
-                                />
-                              </Menu.Button>
-                            </div>
-
-                            <Transition
-                              as={Fragment}
-                              enter="transition ease-out duration-100"
-                              enterFrom="transform opacity-0 scale-95"
-                              enterTo="transform opacity-100 scale-100"
-                              leave="transition ease-in duration-75"
-                              leaveFrom="transform opacity-100 scale-100"
-                              leaveTo="transform opacity-0 scale-95"
-                            >
-                              <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                <div className="py-1">
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => handleEditCompetitor(competitor)}
-                                        className={classNames(
-                                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                          'block w-full px-4 py-2 text-left text-sm'
-                                        )}
-                                      >
-                                        Edit
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                  <Menu.Item>
-                                    {({ active }) => (
-                                      <button
-                                        onClick={() => handleDeleteCompetitor(competitor.id)}
-                                        className={classNames(
-                                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                          'block w-full px-4 py-2 text-left text-sm text-red-600'
-                                        )}
-                                      >
-                                        Delete
-                                      </button>
-                                    )}
-                                  </Menu.Item>
-                                </div>
-                              </Menu.Items>
-                            </Transition>
-                          </Menu>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {selectedCompetitorId && (
-                    <div className="mt-6 space-y-6">
-                      <div className="grid grid-cols-1 gap-4">
-                        <FormField
-                          label="Description"
-                          id="description"
-                          type="textarea"
-                          value={competitors.find(c => c.id === selectedCompetitorId)?.description || ''}
-                          onChange={(newValue) => handleCompetitorChange('description', newValue)}
-                        />
-                        <ListField
-                          label="Strengths"
-                          values={competitors.find(c => c.id === selectedCompetitorId)?.strengths || []}
-                          onChange={(values) => handleCompetitorChange('strengths', values)}
-                        />
-                        <ListField
-                          label="Weaknesses"
-                          values={competitors.find(c => c.id === selectedCompetitorId)?.weaknesses || []}
-                          onChange={(values) => handleCompetitorChange('weaknesses', values)}
-                        />
-                        <ListField
-                          label="Key Differentiators"
-                          values={competitors.find(c => c.id === selectedCompetitorId)?.key_differentiators || []}
-                          onChange={(values) => handleCompetitorChange('key_differentiators', values)}
-                        />
-                        <FormField
-                          label="Website"
-                          id="website"
-                          value={competitors.find(c => c.id === selectedCompetitorId)?.website || ''}
-                          onChange={(newValue) => handleCompetitorChange('website', newValue)}
-                        />
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="has_newsletter"
-                            checked={competitors.find(c => c.id === selectedCompetitorId)?.has_newsletter || false}
-                            onChange={(e) => handleCompetitorChange('has_newsletter', e.target.checked)}
-                            className="h-4 w-4 text-coral-600 focus:ring-coral-500 border-gray-300 rounded"
-                          />
-                          <label htmlFor="has_newsletter" className="text-sm font-medium text-gray-700">
-                            Has Email Newsletter
-                          </label>
-                        </div>
-                        <div className="space-y-4">
-                          <h3 className="text-sm font-medium text-gray-900">Social Accounts</h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField
-                              label="Twitter"
-                              id="twitter"
-                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.twitter || ''}
-                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, twitter: newValue })}
-                            />
-                            <FormField
-                              label="Facebook"
-                              id="facebook"
-                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.facebook || ''}
-                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, facebook: newValue })}
-                            />
-                            <FormField
-                              label="LinkedIn"
-                              id="linkedin"
-                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.linkedin || ''}
-                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, linkedin: newValue })}
-                            />
-                            <FormField
-                              label="TikTok"
-                              id="tiktok"
-                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.tiktok || ''}
-                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, tiktok: newValue })}
-                            />
-                            <FormField
-                              label="Instagram"
-                              id="instagram"
-                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.instagram || ''}
-                              onChange={(newValue) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, instagram: newValue })}
-                            />
-                          </div>
-                        </div>
-                        <FormField
-                          label="Other Comments"
-                          id="other_comments"
-                          type="textarea"
-                          value={competitors.find(c => c.id === selectedCompetitorId)?.other_comments || ''}
-                          onChange={(newValue) => handleCompetitorChange('other_comments', newValue)}
-                        />
+                            <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                              <div className="py-1">
+                                <Menu.Item>
+                                  {({ active }) => (
+                                    <button
+                                      onClick={() => handleEditCompetitor(competitor)}
+                                      className={classNames(
+                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                        'block w-full px-4 py-2 text-left text-sm'
+                                      )}
+                                    >
+                                      Edit
+                                    </button>
+                                  )}
+                                </Menu.Item>
+                                <Menu.Item>
+                                  {({ active }) => (
+                                    <button
+                                      onClick={() => competitor.id && handleDeleteCompetitor(competitor.id)}
+                                      className={classNames(
+                                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                        'block w-full px-4 py-2 text-left text-sm text-red-600'
+                                      )}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </Menu.Item>
+                              </div>
+                            </Menu.Items>
+                          </Transition>
+                        </Menu>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
+
+                {selectedCompetitorId && (
+                  <div className="mt-6 space-y-6">
+                    <div className="grid grid-cols-1 gap-4">
+                      <FormField
+                        label="Description"
+                        id="description"
+                        type="textarea"
+                        value={competitors.find(c => c.id === selectedCompetitorId)?.description || ''}
+                        onChange={(value) => handleCompetitorChange('description', value)}
+                      />
+                      <ListField
+                        label="Strengths"
+                        values={competitors.find(c => c.id === selectedCompetitorId)?.strengths || []}
+                        onChange={(values) => handleCompetitorChange('strengths', values)}
+                      />
+                      <ListField
+                        label="Weaknesses"
+                        values={competitors.find(c => c.id === selectedCompetitorId)?.weaknesses || []}
+                        onChange={(values) => handleCompetitorChange('weaknesses', values)}
+                      />
+                      <ListField
+                        label="Key Differentiators"
+                        values={competitors.find(c => c.id === selectedCompetitorId)?.key_differentiators || []}
+                        onChange={(values) => handleCompetitorChange('key_differentiators', values)}
+                      />
+                      <FormField
+                        label="Website"
+                        id="website"
+                        value={competitors.find(c => c.id === selectedCompetitorId)?.website || ''}
+                        onChange={(value) => handleCompetitorChange('website', value)}
+                      />
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="has_newsletter"
+                          checked={competitors.find(c => c.id === selectedCompetitorId)?.has_newsletter || false}
+                          onChange={(e) => handleCompetitorChange('has_newsletter', e.target.checked)}
+                          className="h-4 w-4 text-coral-600 focus:ring-coral-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="has_newsletter" className="text-sm font-medium text-gray-700">
+                          Has Email Newsletter
+                        </label>
+                      </div>
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-gray-900">Social Accounts</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            label="Twitter"
+                            id="twitter"
+                            value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.twitter || ''}
+                            onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, twitter: value })}
+                          />
+                          <FormField
+                            label="Facebook"
+                            id="facebook"
+                            value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.facebook || ''}
+                            onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, facebook: value })}
+                          />
+                          <FormField
+                            label="LinkedIn"
+                            id="linkedin"
+                            value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.linkedin || ''}
+                            onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, linkedin: value })}
+                          />
+                          <FormField
+                            label="TikTok"
+                            id="tiktok"
+                            value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.tiktok || ''}
+                            onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, tiktok: value })}
+                          />
+                          <FormField
+                            label="Instagram"
+                            id="instagram"
+                            value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.instagram || ''}
+                            onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, instagram: value })}
+                          />
+                        </div>
+                      </div>
+                      <FormField
+                        label="Other Comments"
+                        id="other_comments"
+                        type="textarea"
+                        value={competitors.find(c => c.id === selectedCompetitorId)?.other_comments || ''}
+                        onChange={(value) => handleCompetitorChange('other_comments', value)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </Tab.Panel>
 
@@ -1906,14 +2110,14 @@ function MarketingArchitectureContent() {
                             label="Name"
                             id="name"
                             value={newCompetitorProfile.name || ''}
-                            onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, name: newValue }))}
+                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, name: value }))}
                           />
                           <FormField
                             label="Description"
                             id="description"
                             type="textarea"
                             value={newCompetitorProfile.description || ''}
-                            onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, description: newValue }))}
+                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, description: value }))}
                           />
                           <ListField
                             label="Strengths"
@@ -1934,7 +2138,7 @@ function MarketingArchitectureContent() {
                             label="Website"
                             id="website"
                             value={newCompetitorProfile.website || ''}
-                            onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, website: newValue }))}
+                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, website: value }))}
                           />
                           <div className="flex items-center space-x-2">
                             <input
@@ -1955,31 +2159,31 @@ function MarketingArchitectureContent() {
                                 label="Twitter"
                                 id="twitter"
                                 value={newCompetitorProfile.social_accounts?.twitter || ''}
-                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, twitter: newValue } }))}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, twitter: value } }))}
                               />
                               <FormField
                                 label="Facebook"
                                 id="facebook"
                                 value={newCompetitorProfile.social_accounts?.facebook || ''}
-                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, facebook: newValue } }))}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, facebook: value } }))}
                               />
                               <FormField
                                 label="LinkedIn"
                                 id="linkedin"
                                 value={newCompetitorProfile.social_accounts?.linkedin || ''}
-                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, linkedin: newValue } }))}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, linkedin: value } }))}
                               />
                               <FormField
                                 label="TikTok"
                                 id="tiktok"
                                 value={newCompetitorProfile.social_accounts?.tiktok || ''}
-                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, tiktok: newValue } }))}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, tiktok: value } }))}
                               />
                               <FormField
                                 label="Instagram"
                                 id="instagram"
                                 value={newCompetitorProfile.social_accounts?.instagram || ''}
-                                onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, instagram: newValue } }))}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, instagram: value } }))}
                               />
                             </div>
                           </div>
@@ -1988,7 +2192,7 @@ function MarketingArchitectureContent() {
                             id="other_comments"
                             type="textarea"
                             value={newCompetitorProfile.other_comments || ''}
-                            onChange={(newValue) => setNewCompetitorProfile(prev => ({ ...prev, other_comments: newValue }))}
+                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, other_comments: value }))}
                           />
                         </div>
                       </div>
