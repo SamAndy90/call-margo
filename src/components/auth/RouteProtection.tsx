@@ -14,14 +14,14 @@ export default function RouteProtection({ children }: Props) {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
       
-      if (!session) {
+      if (!data.session) {
         router.push('/signin');
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const subscription = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         router.push('/signin');
       }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon } from '@heroicons/react/24/outline';
+import { Dialog } from '@headlessui/react';
 import FormField from '@/components/forms/FormField';
 import ListField from '@/components/forms/ListField';
 import VoiceOfCustomerForm from './VoiceOfCustomerForm';
@@ -48,7 +49,7 @@ interface AudienceProfile {
 
 interface Props {
   profile: AudienceProfile;
-  onProfileChange: (field: string, value: any) => void;
+  onProfileChange: (field: keyof AudienceProfile, value: string | string[] | boolean) => void;
   onAddVoiceOfCustomer: (data: Omit<VoiceOfCustomer, 'id' | 'audience_profile_id'>) => void;
   onAddNote: (data: Omit<AudienceNote, 'id' | 'audience_profile_id' | 'created_by'>) => void;
 }
@@ -275,7 +276,7 @@ export default function AudienceProfileDetails({
                 {voc_data.map((voc) => (
                   <div key={voc.id} className="bg-gray-50 p-4 rounded-lg">
                     <div className="font-medium text-gray-900">{voc.title}</div>
-                    <div className="mt-2 text-sm text-gray-600 italic">"{voc.quote}"</div>
+                    <div className="mt-2 text-sm text-gray-600 italic">&quot;{voc.quote}&quot;</div>
                     <div className="mt-2 text-sm text-gray-500 flex items-center justify-between">
                       <span>
                         - {voc.customer_name}
@@ -292,7 +293,7 @@ export default function AudienceProfileDetails({
                 {!showVocForm && voc_data.length === 0 && (
                   <div className="text-center py-6 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-500">No voice of customer data yet.</p>
-                    <p className="text-xs text-gray-400 mt-1">Click the "Add VOC" button to add customer feedback.</p>
+                    <p className="text-xs text-gray-400 mt-1">Click the &quot;Add VOC&quot; button to add customer feedback.</p>
                   </div>
                 )}
               </div>
@@ -340,7 +341,7 @@ export default function AudienceProfileDetails({
                 {notes.length === 0 && (
                   <div className="text-center py-6 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-500">No notes yet.</p>
-                    <p className="text-xs text-gray-400 mt-1">Click the "Add Note" button to create a note.</p>
+                    <p className="text-xs text-gray-400 mt-1">Click the &quot;Add Note&quot; button to create a note.</p>
                   </div>
                 )}
               </div>

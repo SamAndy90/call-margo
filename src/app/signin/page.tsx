@@ -18,10 +18,8 @@ export default function SignIn() {
 
   const supabase = createClientComponentClient();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -30,16 +28,15 @@ export default function SignIn() {
       });
 
       if (error) {
-        setError(error.message);
+        console.error('Error signing in:', error.message);
         return;
       }
 
-      router.push(redirectedFrom);
-      router.refresh();
-    } catch (err) {
-      setError('An unexpected error occurred');
-    } finally {
-      setLoading(false);
+      router.push('/dashboard');
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Error:', error.message);
+      }
     }
   };
 
