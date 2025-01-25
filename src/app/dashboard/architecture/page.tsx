@@ -2,8 +2,11 @@
 
 import React, { Fragment, useState, useEffect, useCallback } from 'react';
 import { Tab, Dialog, Transition, Menu } from '@headlessui/react';
-import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { EllipsisVerticalIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { useUser } from '@/hooks/useUser';
+import { supabase } from '@/lib/supabaseClient';
+import TeamMemberModal from '@/components/modals/TeamMemberModal';
+import AudienceProfileDetails from '@/components/marketing-architecture/AudienceProfileDetails';
 import FormField from '@/components/forms/FormField';
 import ListField from '@/components/marketing-architecture/ListField';
 import { PostgrestError } from '@supabase/supabase-js';
@@ -883,10 +886,9 @@ function MarketingArchitectureContent() {
     }
   };
 
-  const formatDateForInput = (dateString: string | null | undefined): string => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+  const handleError = (error: PostgrestError) => {
+    console.error('Error:', error.message);
+    // TODO: Add proper error handling UI feedback
   };
 
   useEffect(() => {
@@ -970,22 +972,26 @@ function MarketingArchitectureContent() {
       if (!user?.id) return;
 
       try {
-        const { data: competitors, error } = await supabase
+        const { data, error } = await supabase
           .from('competitors')
           .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: true });
+          .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          handleError(error);
+          return;
+        }
 
-        setCompetitors(competitors || []);
+        setCompetitors(data || []);
       } catch (error) {
-        console.error('Error loading competitors:', error);
+        if (error instanceof Error) {
+          console.error('Error loading competitors:', error.message);
+        }
       }
     };
 
     loadCompetitors();
-  }, [user?.id, supabase]);
+  }, [user?.id]);
 
   // Initialize state with empty arrays and strings
   const defaultAudienceProfile: AudienceProfile = {
