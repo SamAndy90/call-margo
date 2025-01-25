@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { Fragment, useState, useEffect, useCallback } from 'react';
 import { Tab } from '@headlessui/react';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
 import { PlusIcon } from '@heroicons/react/24/outline';
+import { Menu, Transition } from '@headlessui/react';
+import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabaseClient';
 import TeamMemberModal from '@/components/modals/TeamMemberModal';
@@ -90,6 +92,7 @@ interface AudienceProfile {
   notes?: AudienceNote[];
   created_at?: Date;
   updated_at?: Date;
+  archived?: boolean;
 }
 
 const tabs = [
@@ -112,9 +115,12 @@ interface FormFieldProps {
   onChange?: (value: string) => void;
 }
 
-function FormField({ label, id, type = 'text', placeholder, rows = 3, value = '', onChange }: FormFieldProps) {
+function FormField({ label, id, type = 'text', placeholder, rows = 3, value, onChange }: FormFieldProps) {
   const isTextarea = type === 'textarea';
   const Component = isTextarea ? 'textarea' : 'input';
+
+  // Ensure value is never null or undefined
+  const safeValue = value ?? '';
 
   return (
     <div className="space-y-1">
@@ -129,7 +135,7 @@ function FormField({ label, id, type = 'text', placeholder, rows = 3, value = ''
           rows={isTextarea ? rows : undefined}
           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral-500 focus:ring-coral-500 sm:text-sm"
           placeholder={placeholder}
-          value={value}
+          value={safeValue}
           onChange={(e) => onChange?.(e.target.value)}
         />
       </div>
@@ -140,6 +146,7 @@ function FormField({ label, id, type = 'text', placeholder, rows = 3, value = ''
 function MarketingArchitectureContent() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [selectedTeamMember, setSelectedTeamMember] = useState<TeamMember | undefined>();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [companyData, setCompanyData] = useState<CompanyData>({
     user_id: '',
@@ -169,6 +176,13 @@ function MarketingArchitectureContent() {
   const [isVocModalOpen, setIsVocModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const { user } = useUser();
+
+  useEffect(() => {
+    if (user?.id) {
+      setCompanyData(prev => ({ ...prev, user_id: user.id }));
+      setBrandData(prev => ({ ...prev, user_id: user.id }));
+    }
+  }, [user?.id]);
 
   const fetchCompanyData = useCallback(async () => {
     if (!user?.id) return;
@@ -240,85 +254,165 @@ function MarketingArchitectureContent() {
     }
   }, [user?.id]);
 
+  // Fetch team members and ensure current user is included
   const fetchTeamMembers = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('No user ID available');
+      return;
+    }
     
+    if (!companyData.id) {
+      console.log('No company ID available');
+      return;
+    }
+
+    console.log('Attempting to fetch team members with:', {
+      userId: user.id,
+      userEmail: user.email,
+      companyId: companyData.id,
+      companyName: companyData.name
+    });
+
     try {
-      const { data, error } = await supabase
+      // First check if the current user is already a team member
+      const { data: existingMembers, error: fetchError } = await supabase
         .from('team_members')
         .select('*')
-        .eq('company_id', user.id);
+        .eq('company_id', companyData.id)
+        .eq('email', user.email);
 
-      if (error) {
-        console.log('Raw error:', error);
-        console.log('Error object details:', {
-          error: JSON.stringify(error, null, 2),
-          type: typeof error,
-          isObject: error instanceof Object,
-          isError: error instanceof Error,
-          isPostgrestError: error instanceof PostgrestError,
-          keys: error instanceof Object ? Object.keys(error) : [],
-          prototype: error instanceof Object ? Object.getPrototypeOf(error) : null,
-          constructor: error instanceof Object ? error.constructor.name : null
+      if (fetchError) {
+        console.error('Error checking existing team member:', {
+          error: fetchError,
+          message: fetchError.message,
+          details: fetchError.details,
+          hint: fetchError.hint,
+          code: fetchError.code
         });
-
-        if (error instanceof PostgrestError) {
-          console.error('Postgrest error:', {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-            hint: error.hint
-          });
-        } else if (error instanceof Error) {
-          console.error('Standard error:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          });
-        } else {
-          console.error('Unknown error type:', String(error));
-        }
-        if (error.code === '42P01') { // Table doesn't exist
-          console.error('Team members table does not exist. Please run the database migrations.');
-          return;
-        }
-        throw error;
+        throw fetchError;
       }
 
-      if (data) {
-        setTeamMembers(data);
+      console.log('Existing member check result:', existingMembers);
+
+      // If user is not a team member, add them
+      if (!existingMembers || existingMembers.length === 0) {
+        console.log('Current user not found as team member, adding...');
+        
+        const { data: insertedMember, error: insertError } = await supabase
+          .from('team_members')
+          .insert([{
+            company_id: companyData.id,
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            email: user.email,
+            role: 'Owner',
+            roleDescription: 'Company owner and administrator'
+          }])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error inserting team member:', {
+            error: insertError,
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint,
+            code: insertError.code
+          });
+          throw insertError;
+        }
+
+        console.log('Successfully added current user as team member:', insertedMember);
       }
-    } catch (error: unknown) {
-      console.log('Raw error:', error);
-      console.log('Error object details:', {
-        error: JSON.stringify(error, null, 2),
-        type: typeof error,
-        isObject: error instanceof Object,
-        isError: error instanceof Error,
-        isPostgrestError: error instanceof PostgrestError,
-        keys: error instanceof Object ? Object.keys(error) : [],
-        prototype: error instanceof Object ? Object.getPrototypeOf(error) : null,
-        constructor: error instanceof Object ? error.constructor.name : null
+
+      // Fetch all team members
+      const { data: allMembers, error: allMembersError } = await supabase
+        .from('team_members')
+        .select('*')
+        .eq('company_id', companyData.id);
+
+      if (allMembersError) {
+        console.error('Error fetching all team members:', {
+          error: allMembersError,
+          message: allMembersError.message,
+          details: allMembersError.details,
+          hint: allMembersError.hint,
+          code: allMembersError.code
+        });
+        throw allMembersError;
+      }
+
+      console.log('Successfully fetched all team members:', allMembers);
+      setTeamMembers(allMembers || []);
+
+    } catch (error: any) {
+      console.error('Team members operation failed:', {
+        error,
+        message: error.message,
+        name: error.name,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: error.stack
       });
-
-      if (error instanceof PostgrestError) {
-        console.error('Postgrest error:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-      } else if (error instanceof Error) {
-        console.error('Standard error:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-      } else {
-        console.error('Unknown error type:', String(error));
-      }
+      setTeamMembers([]); // Reset to empty array on error
     }
-  }, [user?.id]);
+  }, [user, companyData]);
+
+  useEffect(() => {
+    if (companyData.id) {
+      fetchTeamMembers();
+    }
+  }, [fetchTeamMembers, companyData.id]);
+
+  const handleEditTeamMember = (member: TeamMember) => {
+    setSelectedTeamMember(member);
+    setIsTeamModalOpen(true);
+  };
+
+  const handleSaveTeamMember = async (memberData: Omit<TeamMember, 'id'>) => {
+    if (!user?.id || !companyData.id) return;
+
+    try {
+      if (selectedTeamMember) {
+        // Update existing team member
+        const { data: updatedMember, error } = await supabase
+          .from('team_members')
+          .update({
+            name: memberData.name,
+            role: memberData.role,
+            roleDescription: memberData.roleDescription,
+            // Don't update email if it's the current user
+            ...(selectedTeamMember.email !== user.email ? { email: memberData.email } : {})
+          })
+          .eq('id', selectedTeamMember.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setTeamMembers(prev => prev.map(m => m.id === selectedTeamMember.id ? updatedMember : m));
+      } else {
+        // Add new team member
+        const { data: newMember, error } = await supabase
+          .from('team_members')
+          .insert([{
+            ...memberData,
+            company_id: companyData.id
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setTeamMembers(prev => [...prev, newMember]);
+      }
+    } catch (error) {
+      console.error('Error saving team member:', error);
+    }
+
+    setSelectedTeamMember(undefined);
+    setIsTeamModalOpen(false);
+  };
 
   const fetchBrandData = useCallback(async () => {
     if (!user?.id) return;
@@ -584,65 +678,65 @@ function MarketingArchitectureContent() {
   };
 
   const handleAddVoiceOfCustomer = async (profileId: string, vocData: Omit<VoiceOfCustomer, 'id' | 'audience_profile_id'>) => {
+    if (!user?.id) return;
+
     try {
-      const { data, error } = await supabase
+      const { data: newVoc, error } = await supabase
         .from('voice_of_customer')
-        .insert([
-          {
-            audience_profile_id: profileId,
-            ...vocData
-          }
-        ])
+        .insert([{
+          ...vocData,
+          audience_profile_id: profileId,
+        }])
         .select()
         .single();
 
       if (error) throw error;
 
-      if (data) {
-        setAudienceProfiles(prev => prev.map(profile => {
+      if (newVoc) {
+        setAudienceProfiles(profiles => profiles.map(profile => {
           if (profile.id === profileId) {
             return {
               ...profile,
-              voc_data: [...(profile.voc_data || []), data]
+              voc_data: [...(profile.voc_data || []), newVoc],
             };
           }
           return profile;
         }));
       }
-    } catch (error: unknown) {
-      console.error('Error adding voice of customer:', error instanceof Error ? error.message : String(error));
+    } catch (error) {
+      console.error('Error adding voice of customer:', error);
     }
   };
 
   const handleAddNote = async (profileId: string, noteData: Omit<AudienceNote, 'id' | 'audience_profile_id' | 'created_by'>) => {
+    if (!user?.id) return;
+
     try {
-      const { data, error } = await supabase
+      const { data: newNote, error } = await supabase
         .from('audience_notes')
-        .insert([
-          {
-            audience_profile_id: profileId,
-            created_by: user?.id,
-            ...noteData
-          }
-        ])
+        .insert([{
+          ...noteData,
+          audience_profile_id: profileId,
+          created_by: user.id,
+        }])
         .select()
         .single();
 
       if (error) throw error;
 
-      if (data) {
-        setAudienceProfiles(prev => prev.map(profile => {
+      if (newNote) {
+        setAudienceProfiles(profiles => profiles.map(profile => {
           if (profile.id === profileId) {
             return {
               ...profile,
-              notes: [...(profile.notes || []), data]
+              notes: [...(profile.notes || []), newNote],
             };
           }
           return profile;
         }));
       }
-    } catch (error: unknown) {
-      console.error('Error adding note:', error instanceof Error ? error.message : String(error));
+    } catch (error) {
+      console.error('Error adding note:', error);
     }
   };
 
@@ -650,7 +744,7 @@ function MarketingArchitectureContent() {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: newProfile, error } = await supabase
         .from('audience_profiles')
         .insert([{
           user_id: user.id,
@@ -671,87 +765,48 @@ function MarketingArchitectureContent() {
 
       if (error) throw error;
 
-      if (data) {
-        setAudienceProfiles(prev => [...prev, data]);
-        setSelectedAudienceId(data.id);
+      if (newProfile) {
+        setAudienceProfiles([...audienceProfiles, newProfile]);
+        setSelectedAudienceId(newProfile.id);
       }
     } catch (error: unknown) {
       console.error('Error creating audience profile:', error instanceof Error ? error.message : String(error));
     }
   };
 
-  const handleSaveTeamMember = async (member: Omit<TeamMember, 'id'>) => {
+  const handleArchiveAudienceProfile = async (profileId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('team_members')
-        .insert([{ ...member, company_id: user?.id }])
-        .select()
-        .single();
+      const { error } = await supabase
+        .from('audience_profiles')
+        .update({ archived: true })
+        .eq('id', profileId);
 
-      if (error) {
-        console.log('Raw error:', error);
-        console.log('Error object details:', {
-          error: JSON.stringify(error, null, 2),
-          type: typeof error,
-          isObject: error instanceof Object,
-          isError: error instanceof Error,
-          isPostgrestError: error instanceof PostgrestError,
-          keys: error instanceof Object ? Object.keys(error) : [],
-          prototype: error instanceof Object ? Object.getPrototypeOf(error) : null,
-          constructor: error instanceof Object ? error.constructor.name : null
-        });
+      if (error) throw error;
 
-        if (error instanceof PostgrestError) {
-          console.error('Postgrest error:', {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-            hint: error.hint
-          });
-        } else if (error instanceof Error) {
-          console.error('Standard error:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          });
-        } else {
-          console.error('Unknown error type:', String(error));
-        }
-        throw error;
-      }
-
-      if (data) {
-        setTeamMembers([...teamMembers, data]);
+      setAudienceProfiles(audienceProfiles.filter(p => p.id !== profileId));
+      if (selectedAudienceId === profileId) {
+        setSelectedAudienceId(null);
       }
     } catch (error: unknown) {
-      console.log('Raw error:', error);
-      console.log('Error object details:', {
-        error: JSON.stringify(error, null, 2),
-        type: typeof error,
-        isObject: error instanceof Object,
-        isError: error instanceof Error,
-        isPostgrestError: error instanceof PostgrestError,
-        keys: error instanceof Object ? Object.keys(error) : [],
-        prototype: error instanceof Object ? Object.getPrototypeOf(error) : null,
-        constructor: error instanceof Object ? error.constructor.name : null
-      });
+      console.error('Error archiving audience profile:', error instanceof Error ? error.message : String(error));
+    }
+  };
 
-      if (error instanceof PostgrestError) {
-        console.error('Postgrest error:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-      } else if (error instanceof Error) {
-        console.error('Standard error:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-      } else {
-        console.error('Unknown error type:', String(error));
+  const handleDeleteAudienceProfile = async (profileId: string) => {
+    try {
+      const { error } = await supabase
+        .from('audience_profiles')
+        .delete()
+        .eq('id', profileId);
+
+      if (error) throw error;
+
+      setAudienceProfiles(audienceProfiles.filter(p => p.id !== profileId));
+      if (selectedAudienceId === profileId) {
+        setSelectedAudienceId(null);
       }
+    } catch (error: unknown) {
+      console.error('Error deleting audience profile:', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -763,13 +818,12 @@ function MarketingArchitectureContent() {
 
   useEffect(() => {
     fetchCompanyData();
-    fetchTeamMembers();
     fetchBrandData();
     fetchAudienceProfiles();
-  }, [fetchCompanyData, fetchTeamMembers, fetchBrandData, fetchAudienceProfiles]);
+  }, [fetchCompanyData, fetchBrandData, fetchAudienceProfiles]);
 
   // Initialize state with empty arrays and strings
-  const defaultAudienceProfile = {
+  const defaultAudienceProfile: AudienceProfile = {
     id: '',
     user_id: '',
     name: '',
@@ -787,10 +841,15 @@ function MarketingArchitectureContent() {
     notes: [],
   };
 
+  // Update defaultAudienceProfile when user is available
+  const currentAudienceProfile = user?.id
+    ? { ...defaultAudienceProfile, user_id: user.id }
+    : defaultAudienceProfile;
+
   // Get the selected profile or use default values
   const selectedProfile = selectedAudienceId 
-    ? audienceProfiles.find(p => p.id === selectedAudienceId) ?? defaultAudienceProfile
-    : defaultAudienceProfile;
+    ? audienceProfiles.find(p => p.id === selectedAudienceId) || currentAudienceProfile
+    : currentAudienceProfile;
 
   return (
     <div className="px-4 sm:px-6 lg:px-8">
@@ -800,16 +859,6 @@ function MarketingArchitectureContent() {
           <p className="mt-2 text-sm text-gray-700">
             Define and manage your marketing foundation, strategy, and infrastructure.
           </p>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            type="button"
-            onClick={() => setIsTeamModalOpen(true)}
-            className="inline-flex items-center rounded-md border border-transparent bg-coral-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-coral-700 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2"
-          >
-            <UserGroupIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-            Add Team Member
-          </button>
         </div>
       </div>
 
@@ -834,109 +883,140 @@ function MarketingArchitectureContent() {
           </Tab.List>
           <Tab.Panels className="mt-8">
             {/* Company Panel */}
-            <Tab.Panel className="space-y-6">
-              <FormField
-                label="Company Name"
-                id="companyName"
-                placeholder="Enter your company name"
-                value={companyData.name}
-                onChange={(value) => handleCompanyDataChange('name', value)}
-              />
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Tab.Panel>
+              <div className="space-y-6">
                 <FormField
-                  label="Founded"
-                  id="founded"
-                  type="date"
-                  value={companyData.founded}
-                  onChange={(value) => handleCompanyDataChange('founded', value)}
+                  label="Company Name"
+                  id="companyName"
+                  placeholder="Enter your company name"
+                  value={companyData.name}
+                  onChange={(value) => handleCompanyDataChange('name', value)}
                 />
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <FormField
+                    label="Founded"
+                    id="founded"
+                    type="date"
+                    value={companyData.founded}
+                    onChange={(value) => handleCompanyDataChange('founded', value)}
+                  />
+                  <FormField
+                    label="Website"
+                    id="website"
+                    type="url"
+                    placeholder="https://example.com"
+                    value={companyData.website}
+                    onChange={(value) => handleCompanyDataChange('website', value)}
+                  />
+                </div>
                 <FormField
-                  label="Website"
-                  id="website"
-                  type="url"
-                  placeholder="https://example.com"
-                  value={companyData.website}
-                  onChange={(value) => handleCompanyDataChange('website', value)}
-                />
-              </div>
-              <FormField
-                label="Description"
-                id="description"
-                type="textarea"
-                placeholder="Brief description of your company"
-                value={companyData.description}
-                onChange={(value) => handleCompanyDataChange('description', value)}
-              />
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <FormField
-                  label="Mission"
-                  id="mission"
+                  label="Description"
+                  id="description"
                   type="textarea"
-                  placeholder="Your company's mission"
-                  value={companyData.mission}
-                  onChange={(value) => handleCompanyDataChange('mission', value)}
+                  placeholder="Brief description of your company"
+                  value={companyData.description}
+                  onChange={(value) => handleCompanyDataChange('description', value)}
                 />
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <FormField
+                    label="Mission"
+                    id="mission"
+                    type="textarea"
+                    placeholder="Your company's mission"
+                    value={companyData.mission}
+                    onChange={(value) => handleCompanyDataChange('mission', value)}
+                  />
+                  <FormField
+                    label="Vision"
+                    id="vision"
+                    type="textarea"
+                    placeholder="Your company's vision"
+                    value={companyData.vision}
+                    onChange={(value) => handleCompanyDataChange('vision', value)}
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <FormField
+                    label="Strengths"
+                    id="strengths"
+                    type="textarea"
+                    placeholder="List your company's strengths"
+                    value={companyData.strengths}
+                    onChange={(value) => handleCompanyDataChange('strengths', value)}
+                  />
+                  <FormField
+                    label="Weaknesses"
+                    id="weaknesses"
+                    type="textarea"
+                    placeholder="List areas for improvement"
+                    value={companyData.weaknesses}
+                    onChange={(value) => handleCompanyDataChange('weaknesses', value)}
+                  />
+                </div>
                 <FormField
-                  label="Vision"
-                  id="vision"
+                  label="Key Differentiators"
+                  id="differentiators"
                   type="textarea"
-                  placeholder="Your company's vision"
-                  value={companyData.vision}
-                  onChange={(value) => handleCompanyDataChange('vision', value)}
+                  placeholder="What makes your company unique?"
+                  value={companyData.differentiators}
+                  onChange={(value) => handleCompanyDataChange('differentiators', value)}
                 />
-              </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <FormField
-                  label="Strengths"
-                  id="strengths"
-                  type="textarea"
-                  placeholder="List your company's strengths"
-                  value={companyData.strengths}
-                  onChange={(value) => handleCompanyDataChange('strengths', value)}
-                />
-                <FormField
-                  label="Weaknesses"
-                  id="weaknesses"
-                  type="textarea"
-                  placeholder="List areas for improvement"
-                  value={companyData.weaknesses}
-                  onChange={(value) => handleCompanyDataChange('weaknesses', value)}
-                />
-              </div>
-              <FormField
-                label="Key Differentiators"
-                id="differentiators"
-                type="textarea"
-                placeholder="What makes your company unique?"
-                value={companyData.differentiators}
-                onChange={(value) => handleCompanyDataChange('differentiators', value)}
-              />
 
-              {/* Team Members Section */}
-              <div className="mt-8">
-                <h3 className="text-lg font-medium text-gray-900">Team Members</h3>
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {teamMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-coral-500 focus-within:ring-offset-2 hover:border-gray-400"
-                    >
-                      <div className="flex-shrink-0">
-                        <div className="h-10 w-10 rounded-full bg-coral-500 flex items-center justify-center">
-                          <span className="text-white font-medium text-sm">
-                            {member.name.split(' ').map(n => n[0]).join('')}
-                          </span>
-                        </div>
+                {/* Team Members Section */}
+                <div className="bg-white shadow sm:rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <div className="sm:flex sm:items-center sm:justify-between">
+                      <div>
+                        <h3 className="text-base font-semibold leading-6 text-gray-900">Team Members</h3>
+                        <p className="mt-2 text-sm text-gray-500">
+                          Manage your team and their roles.
+                        </p>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <a href="#" className="focus:outline-none">
-                          <span className="absolute inset-0" aria-hidden="true" />
-                          <p className="text-sm font-medium text-gray-900">{member.name}</p>
-                          <p className="truncate text-sm text-gray-500">{member.role}</p>
-                        </a>
+                      <div className="mt-4 sm:mt-0">
+                        <button
+                          type="button"
+                          onClick={() => setIsTeamModalOpen(true)}
+                          className="inline-flex items-center rounded-md bg-coral-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
+                        >
+                          <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5 text-white" aria-hidden="true" />
+                          Add Team Member
+                        </button>
                       </div>
                     </div>
-                  ))}
+                    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {teamMembers.map((member) => (
+                        <div
+                          key={member.id}
+                          className="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-coral-500 focus-within:ring-offset-2 hover:border-gray-400"
+                        >
+                          <div className="flex-shrink-0">
+                            <div className="h-10 w-10 rounded-full bg-coral-500 flex items-center justify-center">
+                              <span className="text-white font-medium text-sm">
+                                {member.name.split(' ').map(n => n[0]).join('')}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <button
+                              onClick={() => handleEditTeamMember(member)}
+                              className="focus:outline-none w-full text-left"
+                            >
+                              <p className="text-sm font-medium text-gray-900">{member.name}</p>
+                              <p className="truncate text-sm text-gray-500">{member.role}</p>
+                              <p className="truncate text-xs text-gray-400">{member.email}</p>
+                            </button>
+                          </div>
+                          {member.email === user?.email && (
+                            <div className="flex-shrink-0">
+                              <span className="inline-block px-2 py-1 text-xs font-medium text-coral-700 bg-coral-50 rounded-full">
+                                Owner
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </Tab.Panel>
@@ -1021,21 +1101,26 @@ function MarketingArchitectureContent() {
 
             {/* Audience Panel */}
             <Tab.Panel className="space-y-6">
-              <div className="sm:flex sm:items-center sm:justify-between">
-                <h2 className="text-lg font-medium text-gray-900">Audience Profiles</h2>
-                <div className="mt-4 sm:mt-0">
+              <div className="border-b border-gray-200 pb-5 mb-8">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-base font-semibold leading-6 text-gray-900">Audience Profiles</h2>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Create and manage detailed profiles of your target audience segments.
+                    </p>
+                  </div>
                   <button
-                    type="button"
                     onClick={handleCreateAudienceProfile}
-                    className="inline-flex items-center rounded-md border border-transparent bg-coral-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-coral-700 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2"
+                    type="button"
+                    className="inline-flex items-center rounded-md bg-coral-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
                   >
-                    <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                    <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5 text-white" aria-hidden="true" />
                     New Profile
                   </button>
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6">
                 {audienceProfiles.map((profile) => (
                   <div
                     key={profile.id}
@@ -1043,9 +1128,6 @@ function MarketingArchitectureContent() {
                       'relative flex items-center space-x-3 rounded-lg border px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-coral-500 focus-within:ring-offset-2 hover:border-gray-400',
                       selectedAudienceId === profile.id ? 'border-coral-500 bg-coral-50' : 'border-gray-300 bg-white'
                     )}
-                    onClick={() => setSelectedAudienceId(profile.id)}
-                    role="button"
-                    tabIndex={0}
                   >
                     <div className="flex-shrink-0">
                       <div className={classNames(
@@ -1057,11 +1139,75 @@ function MarketingArchitectureContent() {
                         </span>
                       </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="absolute inset-0" aria-hidden="true" />
+                    <div 
+                      className="min-w-0 flex-1 cursor-pointer"
+                      onClick={() => setSelectedAudienceId(profile.id)}
+                    >
                       <p className="text-sm font-medium text-gray-900">{profile.name}</p>
                       <p className="truncate text-sm text-gray-500">{profile.description || 'No description'}</p>
                     </div>
+                    <Menu as="div" className="relative inline-block text-left">
+                      <div>
+                        <Menu.Button className="flex items-center rounded-full bg-white text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2">
+                          <span className="sr-only">Open options</span>
+                          <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+                        </Menu.Button>
+                      </div>
+
+                      <Transition
+                        as={Fragment}
+                        enter="transition ease-out duration-100"
+                        enterFrom="transform opacity-0 scale-95"
+                        enterTo="transform opacity-100 scale-100"
+                        leave="transition ease-in duration-75"
+                        leaveFrom="transform opacity-100 scale-100"
+                        leaveTo="transform opacity-0 scale-95"
+                      >
+                        <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                          <div className="py-1">
+                            <Menu.Item>
+                              {({ active }) => (
+                                <button
+                                  onClick={() => setSelectedAudienceId(profile.id)}
+                                  className={classNames(
+                                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                    'block w-full px-4 py-2 text-left text-sm'
+                                  )}
+                                >
+                                  Edit
+                                </button>
+                              )}
+                            </Menu.Item>
+                            <Menu.Item>
+                              {({ active }) => (
+                                <button
+                                  onClick={() => handleArchiveAudienceProfile(profile.id)}
+                                  className={classNames(
+                                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                    'block w-full px-4 py-2 text-left text-sm'
+                                  )}
+                                >
+                                  Archive
+                                </button>
+                              )}
+                            </Menu.Item>
+                            <Menu.Item>
+                              {({ active }) => (
+                                <button
+                                  onClick={() => handleDeleteAudienceProfile(profile.id)}
+                                  className={classNames(
+                                    active ? 'bg-gray-100 text-red-900' : 'text-red-700',
+                                    'block w-full px-4 py-2 text-left text-sm'
+                                  )}
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </Menu.Item>
+                          </div>
+                        </Menu.Items>
+                      </Transition>
+                    </Menu>
                   </div>
                 ))}
               </div>
@@ -1070,7 +1216,7 @@ function MarketingArchitectureContent() {
                 <div className="mt-6">
                   <AudienceProfileDetails
                     profile={selectedProfile}
-                    onProfileChange={(field, value) => handleAudienceProfileChange(selectedAudienceId, field, value)}
+                    onProfileChange={(field, value) => handleEditAudienceProfile(selectedAudienceId, field, value)}
                     onAddVoiceOfCustomer={(data) => handleAddVoiceOfCustomer(selectedAudienceId, data)}
                     onAddNote={(data) => handleAddNote(selectedAudienceId, data)}
                   />
@@ -1095,8 +1241,13 @@ function MarketingArchitectureContent() {
 
       <TeamMemberModal
         isOpen={isTeamModalOpen}
-        onClose={() => setIsTeamModalOpen(false)}
+        onClose={() => {
+          setIsTeamModalOpen(false);
+          setSelectedTeamMember(undefined);
+        }}
         onSave={handleSaveTeamMember}
+        initialMember={selectedTeamMember}
+        currentUserEmail={user?.email}
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { classNames } from '@/utils';
 
 interface TeamMember {
   id: string;
@@ -17,15 +18,18 @@ interface TeamMemberModalProps {
   onClose: () => void;
   onSave: (member: Omit<TeamMember, 'id'>) => void;
   initialMember?: TeamMember;
+  currentUserEmail?: string;
 }
 
-export default function TeamMemberModal({ isOpen, onClose, onSave, initialMember }: TeamMemberModalProps) {
+export default function TeamMemberModal({ isOpen, onClose, onSave, initialMember, currentUserEmail }: TeamMemberModalProps) {
   const [member, setMember] = useState({
     name: initialMember?.name || '',
     email: initialMember?.email || '',
     role: initialMember?.role || '',
     roleDescription: initialMember?.roleDescription || '',
   });
+
+  const isCurrentUser = member.email === currentUserEmail;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,10 +103,21 @@ export default function TeamMemberModal({ isOpen, onClose, onSave, initialMember
                           name="email"
                           id="email"
                           required
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-coral-500 focus:ring-coral-500 sm:text-sm"
+                          disabled={isCurrentUser}
+                          className={classNames(
+                            "mt-1 block w-full rounded-md shadow-sm sm:text-sm",
+                            isCurrentUser 
+                              ? "bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed"
+                              : "border-gray-300 focus:border-coral-500 focus:ring-coral-500"
+                          )}
                           value={member.email}
                           onChange={(e) => setMember({ ...member, email: e.target.value })}
                         />
+                        {isCurrentUser && (
+                          <p className="mt-1 text-sm text-gray-500">
+                            Email cannot be changed for the current user
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label htmlFor="role" className="block text-sm font-medium text-gray-700">
