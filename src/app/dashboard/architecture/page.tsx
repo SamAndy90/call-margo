@@ -1148,7 +1148,7 @@ function MarketingArchitectureContent() {
                     </div>
                     <Menu as="div" className="relative inline-block text-left">
                       <div>
-                        <Menu.Button className="flex items-center rounded-full bg-white text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2">
+                        <Menu.Button className="btn flex items-center rounded-full p-2">
                           <span className="sr-only">Open options</span>
                           <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
                         </Menu.Button>

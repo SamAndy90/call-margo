@@ -5,6 +5,30 @@
 :root {
   --background: #ffffff;
   --foreground: #1f2937;
+  
+  /* Coral Colors */
+  --coral-50: #fff1f0;
+  --coral-100: #ffe4e1;
+  --coral-200: #ffc9c2;
+  --coral-300: #ffa499;
+  --coral-400: #ff7264;
+  --coral-500: #ff3b28;
+  --coral-600: #ed1c08;
+  --coral-700: #c51505;
+  --coral-800: #a31509;
+  --coral-900: #86160f;
+  
+  /* Teal Colors */
+  --teal-50: #f0fdfa;
+  --teal-100: #ccfbf1;
+  --teal-200: #99f6e4;
+  --teal-300: #5eead4;
+  --teal-400: #2dd4bf;
+  --teal-500: #14b8a6;
+  --teal-600: #0d9488;
+  --teal-700: #0f766e;
+  --teal-800: #115e59;
+  --teal-900: #134e4a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,4 +42,22 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Default button styles */
+@layer components {
+  .btn {
+    background-color: var(--coral-500);
+    color: white;
+    transition: background-color 0.2s;
+  }
+
+  .btn:hover {
+    background-color: var(--teal-600);
+  }
+
+  .btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--coral-500), 0 0 0 4px var(--coral-500);
+  }
 }
