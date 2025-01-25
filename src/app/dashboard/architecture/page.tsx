@@ -9,6 +9,8 @@ import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabaseClient';
 import TeamMemberModal from '@/components/modals/TeamMemberModal';
 import AudienceProfileDetails from '@/components/marketing-architecture/AudienceProfileDetails';
+import FormField from '@/components/forms/FormField';
+import ListField from '@/components/marketing-architecture/ListField';
 import { PostgrestError } from '@supabase/supabase-js';
 
 function classNames(...classes: string[]) {
@@ -109,6 +111,28 @@ interface ProductProfile {
   archived?: boolean;
 }
 
+interface CompetitorProfile {
+  id?: string;
+  user_id: string;
+  name: string;
+  description: string;
+  strengths: string[];
+  weaknesses: string[];
+  key_differentiators: string[];
+  website: string;
+  has_newsletter: boolean;
+  social_accounts: {
+    twitter?: string;
+    facebook?: string;
+    linkedin?: string;
+    tiktok?: string;
+    instagram?: string;
+  };
+  other_comments?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
 const tabs = [
   { name: 'Company', href: '#company' },
   { name: 'Brand', href: '#brand' },
@@ -118,44 +142,6 @@ const tabs = [
   { name: 'Competitors', href: '#competitors' },
   { name: 'Tech Stack', href: '#tech-stack' },
 ];
-
-interface FormFieldProps {
-  label: string;
-  id: string;
-  type?: 'text' | 'textarea' | 'email' | 'url' | 'date';
-  placeholder?: string;
-  rows?: number;
-  value?: string;
-  onChange?: (value: string) => void;
-}
-
-function FormField({ label, id, type = 'text', placeholder, rows = 3, value, onChange }: FormFieldProps) {
-  const isTextarea = type === 'textarea';
-  const Component = isTextarea ? 'textarea' : 'input';
-
-  // Ensure value is never null or undefined
-  const safeValue = value ?? '';
-
-  return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
-        {label}
-      </label>
-      <div className="mt-1">
-        <Component
-          id={id}
-          name={id}
-          type={type}
-          rows={isTextarea ? rows : undefined}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral-500 focus:ring-coral-500 sm:text-sm"
-          placeholder={placeholder}
-          value={safeValue}
-          onChange={(e) => onChange?.(e.target.value)}
-        />
-      </div>
-    </div>
-  );
-}
 
 function MarketingArchitectureContent() {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -193,6 +179,10 @@ function MarketingArchitectureContent() {
   const [selectedProductId, setSelectedProductId] = useState<string>();
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [newProductProfile, setNewProductProfile] = useState<Partial<ProductProfile>>({});
+  const [competitors, setCompetitors] = useState<CompetitorProfile[]>([]);
+  const [selectedCompetitorId, setSelectedCompetitorId] = useState<string>();
+  const [isCompetitorModalOpen, setIsCompetitorModalOpen] = useState(false);
+  const [newCompetitorProfile, setNewCompetitorProfile] = useState<Partial<CompetitorProfile>>({});
   const { user } = useUser();
 
   useEffect(() => {
@@ -912,6 +902,98 @@ function MarketingArchitectureContent() {
     fetchAudienceProfiles();
   }, [fetchCompanyData, fetchBrandData, fetchAudienceProfiles]);
 
+  const handleCreateCompetitor = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data: competitor, error } = await supabase
+        .from('competitors')
+        .insert([
+          {
+            ...newCompetitorProfile,
+            user_id: user.id,
+            social_accounts: newCompetitorProfile.social_accounts || {},
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCompetitors((prev) => [...prev, competitor]);
+      setIsCompetitorModalOpen(false);
+      setNewCompetitorProfile({});
+    } catch (error) {
+      console.error('Error creating competitor:', error);
+    }
+  };
+
+  const handleEditCompetitor = (competitor: CompetitorProfile) => {
+    setNewCompetitorProfile(competitor);
+    setIsCompetitorModalOpen(true);
+  };
+
+  const handleUpdateCompetitor = async (competitorId: string, updates: Partial<CompetitorProfile>) => {
+    try {
+      const { data: updatedCompetitor, error } = await supabase
+        .from('competitors')
+        .update(updates)
+        .eq('id', competitorId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCompetitors((prev) =>
+        prev.map((c) => (c.id === competitorId ? { ...c, ...updatedCompetitor } : c))
+      );
+    } catch (error) {
+      console.error('Error updating competitor:', error);
+    }
+  };
+
+  const handleDeleteCompetitor = async (competitorId: string) => {
+    try {
+      const { error } = await supabase.from('competitors').delete().eq('id', competitorId);
+
+      if (error) throw error;
+
+      setCompetitors((prev) => prev.filter((c) => c.id !== competitorId));
+      setSelectedCompetitorId(undefined);
+    } catch (error) {
+      console.error('Error deleting competitor:', error);
+    }
+  };
+
+  const handleCompetitorChange = (field: keyof CompetitorProfile, value: any) => {
+    if (!selectedCompetitorId) return;
+
+    const updates = { [field]: value };
+    handleUpdateCompetitor(selectedCompetitorId, updates);
+  };
+
+  useEffect(() => {
+    const loadCompetitors = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: competitors, error } = await supabase
+          .from('competitors')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        setCompetitors(competitors || []);
+      } catch (error) {
+        console.error('Error loading competitors:', error);
+      }
+    };
+
+    loadCompetitors();
+  }, [user?.id, supabase]);
+
   // Initialize state with empty arrays and strings
   const defaultAudienceProfile: AudienceProfile = {
     id: '',
@@ -1526,8 +1608,219 @@ function MarketingArchitectureContent() {
               </Transition.Root>
             </Tab.Panel>
 
+            {/* Competitors Panel */}
+            <Tab.Panel className="space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Market Overview Section */}
+                <div className="space-y-6">
+                  <h2 className="text-lg font-medium text-gray-900">Market Overview</h2>
+                  <div className="space-y-4">
+                    <FormField
+                      label="Industry"
+                      id="industry"
+                      value={''}
+                      onChange={(value) => {}}
+                    />
+                    <FormField
+                      label="Overview of Key Players"
+                      id="key_players"
+                      type="textarea"
+                      value={''}
+                      onChange={(value) => {}}
+                    />
+                    <FormField
+                      label="Company Advantages"
+                      id="advantages"
+                      type="textarea"
+                      value={''}
+                      onChange={(value) => {}}
+                    />
+                  </div>
+                </div>
+
+                {/* Competitor Profiles Section */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-medium text-gray-900">Competitor Profiles</h2>
+                    <button
+                      onClick={() => setIsCompetitorModalOpen(true)}
+                      style={{ backgroundColor: '#d06e63' }}
+                      className="btn text-white px-4 py-2 rounded-md hover:opacity-90"
+                    >
+                      Add Competitor
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {competitors.map((competitor) => (
+                      <div
+                        key={competitor.id}
+                        className={classNames(
+                          'relative rounded-lg border p-4 hover:border-gray-400',
+                          selectedCompetitorId === competitor.id ? 'border-gray-400' : 'border-gray-200'
+                        )}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div
+                            className="min-w-0 flex-1 cursor-pointer"
+                            onClick={() => setSelectedCompetitorId(competitor.id)}
+                          >
+                            <p className="text-sm font-medium text-gray-900">{competitor.name}</p>
+                            <p className="truncate text-sm text-gray-500">
+                              {competitor.description || 'No description'}
+                            </p>
+                          </div>
+                          <Menu as="div" className="relative inline-block text-left">
+                            <div>
+                              <Menu.Button className="flex items-center rounded-full p-2 bg-white hover:bg-teal-50">
+                                <span className="sr-only">Open options</span>
+                                <EllipsisVerticalIcon
+                                  className="h-5 w-5"
+                                  style={{ color: '#d06e63' }}
+                                  aria-hidden="true"
+                                />
+                              </Menu.Button>
+                            </div>
+
+                            <Transition
+                              as={Fragment}
+                              enter="transition ease-out duration-100"
+                              enterFrom="transform opacity-0 scale-95"
+                              enterTo="transform opacity-100 scale-100"
+                              leave="transition ease-in duration-75"
+                              leaveFrom="transform opacity-100 scale-100"
+                              leaveTo="transform opacity-0 scale-95"
+                            >
+                              <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                <div className="py-1">
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={() => handleEditCompetitor(competitor)}
+                                        className={classNames(
+                                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                          'block w-full px-4 py-2 text-left text-sm'
+                                        )}
+                                      >
+                                        Edit
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                  <Menu.Item>
+                                    {({ active }) => (
+                                      <button
+                                        onClick={() => handleDeleteCompetitor(competitor.id)}
+                                        className={classNames(
+                                          active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                                          'block w-full px-4 py-2 text-left text-sm text-red-600'
+                                        )}
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
+                                  </Menu.Item>
+                                </div>
+                              </Menu.Items>
+                            </Transition>
+                          </Menu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedCompetitorId && (
+                    <div className="mt-6 space-y-6">
+                      <div className="grid grid-cols-1 gap-4">
+                        <FormField
+                          label="Description"
+                          id="description"
+                          type="textarea"
+                          value={competitors.find(c => c.id === selectedCompetitorId)?.description || ''}
+                          onChange={(value) => handleCompetitorChange('description', value)}
+                        />
+                        <ListField
+                          label="Strengths"
+                          values={competitors.find(c => c.id === selectedCompetitorId)?.strengths || []}
+                          onChange={(values) => handleCompetitorChange('strengths', values)}
+                        />
+                        <ListField
+                          label="Weaknesses"
+                          values={competitors.find(c => c.id === selectedCompetitorId)?.weaknesses || []}
+                          onChange={(values) => handleCompetitorChange('weaknesses', values)}
+                        />
+                        <ListField
+                          label="Key Differentiators"
+                          values={competitors.find(c => c.id === selectedCompetitorId)?.key_differentiators || []}
+                          onChange={(values) => handleCompetitorChange('key_differentiators', values)}
+                        />
+                        <FormField
+                          label="Website"
+                          id="website"
+                          value={competitors.find(c => c.id === selectedCompetitorId)?.website || ''}
+                          onChange={(value) => handleCompetitorChange('website', value)}
+                        />
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="has_newsletter"
+                            checked={competitors.find(c => c.id === selectedCompetitorId)?.has_newsletter || false}
+                            onChange={(e) => handleCompetitorChange('has_newsletter', e.target.checked)}
+                            className="h-4 w-4 text-coral-600 focus:ring-coral-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor="has_newsletter" className="text-sm font-medium text-gray-700">
+                            Has Email Newsletter
+                          </label>
+                        </div>
+                        <div className="space-y-4">
+                          <h3 className="text-sm font-medium text-gray-900">Social Accounts</h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField
+                              label="Twitter"
+                              id="twitter"
+                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.twitter || ''}
+                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, twitter: value })}
+                            />
+                            <FormField
+                              label="Facebook"
+                              id="facebook"
+                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.facebook || ''}
+                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, facebook: value })}
+                            />
+                            <FormField
+                              label="LinkedIn"
+                              id="linkedin"
+                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.linkedin || ''}
+                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, linkedin: value })}
+                            />
+                            <FormField
+                              label="TikTok"
+                              id="tiktok"
+                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.tiktok || ''}
+                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, tiktok: value })}
+                            />
+                            <FormField
+                              label="Instagram"
+                              id="instagram"
+                              value={competitors.find(c => c.id === selectedCompetitorId)?.social_accounts?.instagram || ''}
+                              onChange={(value) => handleCompetitorChange('social_accounts', { ...competitors.find(c => c.id === selectedCompetitorId)?.social_accounts, instagram: value })}
+                            />
+                          </div>
+                        </div>
+                        <FormField
+                          label="Other Comments"
+                          id="other_comments"
+                          type="textarea"
+                          value={competitors.find(c => c.id === selectedCompetitorId)?.other_comments || ''}
+                          onChange={(value) => handleCompetitorChange('other_comments', value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Tab.Panel>
+
             {/* Other panels */}
-            <Tab.Panel>Competitors Content</Tab.Panel>
             <Tab.Panel>Tech Stack Content</Tab.Panel>
           </Tab.Panels>
         </Tab.Group>
@@ -1543,6 +1836,148 @@ function MarketingArchitectureContent() {
         initialMember={selectedTeamMember}
         currentUserEmail={user?.email}
       />
+
+      {/* Add Competitor Modal */}
+      <Transition.Root show={isCompetitorModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={setIsCompetitorModalOpen}>
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <Dialog.Panel className="relative transform rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                  <div>
+                    <div className="mt-3 text-center sm:mt-5">
+                      <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
+                        Add Competitor
+                      </Dialog.Title>
+                      <div className="mt-2">
+                        <div className="space-y-4">
+                          <FormField
+                            label="Name"
+                            id="name"
+                            value={newCompetitorProfile.name || ''}
+                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, name: value }))}
+                          />
+                          <FormField
+                            label="Description"
+                            id="description"
+                            type="textarea"
+                            value={newCompetitorProfile.description || ''}
+                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, description: value }))}
+                          />
+                          <ListField
+                            label="Strengths"
+                            values={newCompetitorProfile.strengths || []}
+                            onChange={(values) => setNewCompetitorProfile(prev => ({ ...prev, strengths: values }))}
+                          />
+                          <ListField
+                            label="Weaknesses"
+                            values={newCompetitorProfile.weaknesses || []}
+                            onChange={(values) => setNewCompetitorProfile(prev => ({ ...prev, weaknesses: values }))}
+                          />
+                          <ListField
+                            label="Key Differentiators"
+                            values={newCompetitorProfile.key_differentiators || []}
+                            onChange={(values) => setNewCompetitorProfile(prev => ({ ...prev, key_differentiators: values }))}
+                          />
+                          <FormField
+                            label="Website"
+                            id="website"
+                            value={newCompetitorProfile.website || ''}
+                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, website: value }))}
+                          />
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id="has_newsletter"
+                              checked={newCompetitorProfile.has_newsletter || false}
+                              onChange={(e) => setNewCompetitorProfile(prev => ({ ...prev, has_newsletter: e.target.checked }))}
+                              className="h-4 w-4 text-coral-600 focus:ring-coral-500 border-gray-300 rounded"
+                            />
+                            <label htmlFor="has_newsletter" className="text-sm font-medium text-gray-700">
+                              Has Email Newsletter
+                            </label>
+                          </div>
+                          <div className="space-y-4">
+                            <h3 className="text-sm font-medium text-gray-900">Social Accounts</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <FormField
+                                label="Twitter"
+                                id="twitter"
+                                value={newCompetitorProfile.social_accounts?.twitter || ''}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, twitter: value } }))}
+                              />
+                              <FormField
+                                label="Facebook"
+                                id="facebook"
+                                value={newCompetitorProfile.social_accounts?.facebook || ''}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, facebook: value } }))}
+                              />
+                              <FormField
+                                label="LinkedIn"
+                                id="linkedin"
+                                value={newCompetitorProfile.social_accounts?.linkedin || ''}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, linkedin: value } }))}
+                              />
+                              <FormField
+                                label="TikTok"
+                                id="tiktok"
+                                value={newCompetitorProfile.social_accounts?.tiktok || ''}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, tiktok: value } }))}
+                              />
+                              <FormField
+                                label="Instagram"
+                                id="instagram"
+                                value={newCompetitorProfile.social_accounts?.instagram || ''}
+                                onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, social_accounts: { ...prev.social_accounts, instagram: value } }))}
+                              />
+                            </div>
+                          </div>
+                          <FormField
+                            label="Other Comments"
+                            id="other_comments"
+                            type="textarea"
+                            value={newCompetitorProfile.other_comments || ''}
+                            onChange={(value) => setNewCompetitorProfile(prev => ({ ...prev, other_comments: value }))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                    <button
+                      type="button"
+                      className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2"
+                      onClick={handleCreateCompetitor}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                      onClick={() => {
+                        setIsCompetitorModalOpen(false);
+                        setNewCompetitorProfile({});
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </div>
   );
 }
