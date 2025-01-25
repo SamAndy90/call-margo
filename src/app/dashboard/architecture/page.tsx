@@ -891,18 +891,6 @@ function MarketingArchitectureContent() {
     }
   };
 
-  interface ProductProfile {
-    id?: string;
-    user_id: string;
-    name: string;
-    type: string;
-    purpose_benefit: string;
-    description: string;
-    market_category: string;
-    created_at?: Date;
-    updated_at?: Date;
-  }
-
   const handleProductDataChange = (field: keyof ProductProfile, value: string) => {
     setProductProfiles(prev => prev.map(p => 
       p.id === selectedProductId ? { ...p, [field]: value } : p
@@ -1683,7 +1671,7 @@ function MarketingArchitectureContent() {
                     />
                     <FormField
                       label="Company Advantages"
-                      id="advantages"
+                      id="company_advantages"
                       type="textarea"
                       value={''}
                       onChange={(newValue) => {}}
