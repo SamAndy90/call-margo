@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 const navigation = [
@@ -52,10 +53,13 @@ export default function DashboardLayout({
         <div className="flex min-h-0 flex-1 flex-col bg-white">
           <div className="flex h-16 flex-shrink-0 items-center justify-center px-4 border-b">
             <div className="w-full px-2">
-              <img 
-                src="http://cdn.mcauto-images-production.sendgrid.net/93d624ba180cb50a/e265a9e5-00d7-4a90-b94a-ec569233f8f8/1000x273.png" 
+              <Image 
+                src="/images/margo-logo.svg"
                 alt="Margo"
+                width={120}
+                height={32}
                 className="w-full h-5 object-contain"
+                priority
               />
             </div>
           </div>
@@ -106,10 +110,13 @@ export default function DashboardLayout({
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
           <div className="flex h-16 flex-shrink-0 items-center justify-center px-4 border-b">
             <div className="w-full px-2">
-              <img 
-                src="http://cdn.mcauto-images-production.sendgrid.net/93d624ba180cb50a/e265a9e5-00d7-4a90-b94a-ec569233f8f8/1000x273.png" 
+              <Image 
+                src="/images/margo-logo.svg"
                 alt="Margo"
+                width={120}
+                height={32}
                 className="w-full h-5 object-contain"
+                priority
               />
             </div>
           </div>
