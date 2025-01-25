@@ -891,6 +891,24 @@ function MarketingArchitectureContent() {
     }
   };
 
+  interface ProductProfile {
+    id?: string;
+    user_id: string;
+    name: string;
+    type: string;
+    purpose_benefit: string;
+    description: string;
+    market_category: string;
+    created_at?: Date;
+    updated_at?: Date;
+  }
+
+  const handleProductDataChange = (field: keyof ProductProfile, value: string) => {
+    setProductProfiles(prev => prev.map(p => 
+      p.id === selectedProductId ? { ...p, [field]: value } : p
+    ));
+  };
+
   const handleError = (error: PostgrestError) => {
     console.error('Error:', error.message);
     // TODO: Add proper error handling UI feedback
@@ -1447,7 +1465,10 @@ function MarketingArchitectureContent() {
                     )}
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setSelectedProductId(profile.id)}>
+                      <div
+                        className="min-w-0 flex-1 cursor-pointer"
+                        onClick={() => setSelectedProductId(profile.id)}
+                      >
                         <p className="text-sm font-medium text-gray-900">{profile.name}</p>
                         <p className="truncate text-sm text-gray-500">{profile.description || 'No description'}</p>
                       </div>
@@ -1455,7 +1476,11 @@ function MarketingArchitectureContent() {
                         <div>
                           <Menu.Button className="flex items-center rounded-full p-2 bg-white hover:bg-teal-50">
                             <span className="sr-only">Open options</span>
-                            <EllipsisVerticalIcon className="h-5 w-5" style={{ color: '#d06e63' }} aria-hidden="true" />
+                            <EllipsisVerticalIcon
+                              className="h-5 w-5"
+                              style={{ color: '#d06e63' }}
+                              aria-hidden="true"
+                            />
                           </Menu.Button>
                         </div>
 
@@ -1515,33 +1540,33 @@ function MarketingArchitectureContent() {
                           label="Product Name"
                           id="name"
                           value={profile.name}
-                          onChange={(newValue) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => handleProductDataChange('name', newValue)}
                         />
                         <FormField
                           label="Type"
                           id="type"
                           value={profile.type}
-                          onChange={(newValue) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => handleProductDataChange('type', newValue)}
                         />
                         <FormField
                           label="Purpose/Benefit"
                           id="purpose_benefit"
                           type="textarea"
                           value={profile.purpose_benefit}
-                          onChange={(newValue) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => handleProductDataChange('purpose_benefit', newValue)}
                         />
                         <FormField
                           label="Description"
                           id="description"
                           type="textarea"
                           value={profile.description}
-                          onChange={(newValue) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => handleProductDataChange('description', newValue)}
                         />
                         <FormField
                           label="Market Category"
                           id="market_category"
                           value={profile.market_category}
-                          onChange={(newValue) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => handleProductDataChange('market_category', newValue)}
                         />
                       </div>
                     );
