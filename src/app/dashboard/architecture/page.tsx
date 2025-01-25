@@ -3,17 +3,14 @@
 import React, { Fragment, useState, useEffect, useCallback } from 'react';
 import { Tab, Dialog, Transition, Menu } from '@headlessui/react';
 import { EllipsisVerticalIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useUser } from '@/hooks/useUser';
-import { supabase } from '@/lib/supabaseClient';
+import { PostgrestError } from '@supabase/supabase-js';
 import TeamMemberModal from '@/components/modals/TeamMemberModal';
+import ProductModal from '@/components/modals/ProductModal';
 import AudienceProfileDetails from '@/components/marketing-architecture/AudienceProfileDetails';
 import FormField from '@/components/forms/FormField';
 import ListField from '@/components/marketing-architecture/ListField';
-import { PostgrestError } from '@supabase/supabase-js';
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 interface TeamMember {
   id: string;
@@ -23,90 +20,13 @@ interface TeamMember {
   roleDescription: string;
 }
 
-interface BrandData {
-  user_id: string;
-  brand_name: string;
-  tagline: string;
-  values: string;
-  voice_tone: string;
-  visual_identity: string;
-  color_palette: string;
-  typography: string;
-  logo_usage: string;
-}
-
-interface CompanyData {
+interface MarketData {
   id?: string;
   user_id: string;
-  name: string;
-  description: string;
-  mission: string;
-  vision: string;
-  website: string;
-  founded: string;
-  strengths: string;
-  weaknesses: string;
-  differentiators: string;
-  created_at?: Date;
-  updated_at?: Date;
-}
-
-interface VoiceOfCustomer {
-  id?: string;
-  audience_profile_id: string;
-  title: string;
-  quote: string;
-  customer_name: string;
-  customer_title: string;
-  attachment_url?: string;
-  created_at?: Date;
-  updated_at?: Date;
-}
-
-interface AudienceNote {
-  id?: string;
-  audience_profile_id: string;
-  title: string;
-  content: string;
-  created_by?: string;
-  created_at?: Date;
-  updated_at?: Date;
-}
-
-interface AudienceProfile {
-  id?: string;
-  user_id: string;
-  name: string;
-  description: string;
-  problems: string[];
-  product_solutions: string[];
-  attraction_channels: string[];
-  engagement_channels: string[];
-  valuable_segments: string;
-  common_objections: string[];
-  common_channels: string[];
-  trusted_platforms: string[];
-  complementary_problems: string[];
-  voc_data?: VoiceOfCustomer[];
-  notes?: AudienceNote[];
-  created_at?: Date;
-  updated_at?: Date;
-  archived?: boolean;
-}
-
-interface ProductProfile {
-  id?: string;
-  user_id: string;
-  name: string;
-  type: string;
-  purpose_benefit: string;
-  audience: string[];
-  description: string;
+  industry: string;
   market_category: string;
-  problem_solved: string[];
-  created_at?: Date;
-  updated_at?: Date;
-  archived?: boolean;
+  key_players: string;
+  company_advantages: string;
 }
 
 interface CompetitorProfile {
@@ -131,20 +51,73 @@ interface CompetitorProfile {
   updated_at?: Date;
 }
 
-interface MarketData {
+interface AudienceProfile {
   id?: string;
   user_id: string;
-  industry: string;
-  market_category: string;
-  key_players: string;
-  company_advantages: string;
+  name: string;
+  description: string;
+  problems: string[];
+  product_solutions: string[];
+  attraction_channels: string[];
+  engagement_channels: string[];
+  valuable_segments: string;
+  common_objections: string[];
+  common_channels: string[];
+  trusted_platforms: string[];
+  complementary_problems: string[];
   created_at?: Date;
   updated_at?: Date;
+  archived?: boolean;
 }
 
-interface UpdateResponse {
-  data: CompetitorProfile | null;
-  error: PostgrestError | null;
+interface CompanyData {
+  id?: string;
+  user_id: string;
+  name: string;
+  description: string;
+  mission: string;
+  vision: string;
+  website: string;
+  founded: string;
+  strengths: string;
+  weaknesses: string;
+  differentiators: string;
+}
+
+interface BrandData {
+  user_id: string;
+  brand_name: string;
+  tagline: string;
+  values: string;
+  voice_tone: string;
+  visual_identity: string;
+  color_palette: string;
+  typography: string;
+  logo_usage: string;
+}
+
+interface ProductProfile {
+  id?: string;
+  user_id: string;
+  name: string;
+  type: string;
+  description: string;
+  value_proposition: string;
+  target_market: string[];
+  problems_solved: string[];
+  key_features: string[];
+  benefits: string[];
+  price_points: {
+    id: string;
+    name: string;
+    price: string;
+    features: string[];
+  }[];
+  audience_ids: string[];
+  market_category: string;
+  created_at?: Date;
+  updated_at?: Date;
+  archived?: boolean;
 }
 
 const tabs = [
@@ -154,14 +127,30 @@ const tabs = [
   { name: 'Audience', href: '#audience' },
   { name: 'Products', href: '#products' },
   { name: 'Market', href: '#market' },
-  { name: 'Tech Stack', href: '#tech-stack' },
+  { name: 'Competitors', href: '#competitors' },
+  { name: 'Tech Stack', href: '#tech-stack' }
 ];
 
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(' ');
+}
+
 function MarketingArchitectureContent() {
+  const supabase = createClientComponentClient();
   const [selectedTab, setSelectedTab] = useState(0);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
-  const [selectedTeamMember, setSelectedTeamMember] = useState<TeamMember | undefined>();
+  const [selectedTeamMember, setSelectedTeamMember] = useState<TeamMember | null>(null);
+  const [isCompetitorModalOpen, setIsCompetitorModalOpen] = useState(false);
+  const [selectedCompetitorId, setSelectedCompetitorId] = useState<string | null>(null);
+  const [newCompetitorProfile, setNewCompetitorProfile] = useState<Partial<CompetitorProfile>>({});
+  const [isAudienceModalOpen, setIsAudienceModalOpen] = useState(false);
+  const [selectedAudienceId, setSelectedAudienceId] = useState<string | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [competitors, setCompetitors] = useState<CompetitorProfile[]>([]);
+  const [audienceProfiles, setAudienceProfiles] = useState<AudienceProfile[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [productProfiles, setProductProfiles] = useState<ProductProfile[]>([]);
   const [companyData, setCompanyData] = useState<CompanyData>({
     user_id: '',
     name: '',
@@ -172,7 +161,7 @@ function MarketingArchitectureContent() {
     founded: '',
     strengths: '',
     weaknesses: '',
-    differentiators: '',
+    differentiators: ''
   });
   const [brandData, setBrandData] = useState<BrandData>({
     user_id: '',
@@ -183,18 +172,8 @@ function MarketingArchitectureContent() {
     visual_identity: '',
     color_palette: '',
     typography: '',
-    logo_usage: '',
+    logo_usage: ''
   });
-  const [audienceProfiles, setAudienceProfiles] = useState<AudienceProfile[]>([]);
-  const [selectedAudienceId, setSelectedAudienceId] = useState<string | undefined>(undefined);
-  const [productProfiles, setProductProfiles] = useState<ProductProfile[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<string>();
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [newProductProfile, setNewProductProfile] = useState<Partial<ProductProfile>>({});
-  const [competitors, setCompetitors] = useState<CompetitorProfile[]>([]);
-  const [selectedCompetitorId, setSelectedCompetitorId] = useState<string>();
-  const [isCompetitorModalOpen, setIsCompetitorModalOpen] = useState(false);
-  const [newCompetitorProfile, setNewCompetitorProfile] = useState<Partial<CompetitorProfile>>({});
   const [marketData, setMarketData] = useState<MarketData>({
     user_id: '',
     industry: '',
@@ -202,6 +181,7 @@ function MarketingArchitectureContent() {
     key_players: '',
     company_advantages: ''
   });
+
   const { user } = useUser();
 
   useEffect(() => {
@@ -282,170 +262,157 @@ function MarketingArchitectureContent() {
     }
   }, [user?.id]);
 
-  // Fetch team members and ensure current user is included
-  const fetchTeamMembers = useCallback(async () => {
-    if (!user?.id) {
-      console.log('No user ID available');
-      return;
-    }
-    
-    if (!companyData.id) {
-      console.log('No company ID available');
-      return;
-    }
+  // Fetch team members when company data changes
+  useEffect(() => {
+    if (!user?.id) return;
 
-    console.log('Attempting to fetch team members with:', {
-      userId: user.id,
-      userEmail: user.email,
-      companyId: companyData.id,
-      companyName: companyData.name
-    });
-
-    try {
-      // First check if the current user is already a team member
-      const { data: existingMembers, error: fetchError } = await supabase
-        .from('team_members')
-        .select('*')
-        .eq('company_id', companyData.id)
-        .eq('email', user.email);
-
-      if (fetchError) {
-        console.error('Error checking existing team member:', {
-          error: fetchError,
-          message: fetchError.message,
-          details: fetchError.details,
-          hint: fetchError.hint,
-          code: fetchError.code
-        });
-        throw fetchError;
-      }
-
-      console.log('Existing member check result:', existingMembers);
-
-      // If user is not a team member, add them
-      if (!existingMembers || existingMembers.length === 0) {
-        console.log('Current user not found as team member, adding...');
-        
-        const { data: insertedMember, error: insertError } = await supabase
-          .from('team_members')
-          .insert([{
-            company_id: companyData.id,
-            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-            email: user.email,
-            role: 'Owner',
-            roleDescription: 'Company owner and administrator'
-          }])
-          .select()
+    const fetchTeamMembers = useCallback(async () => {
+      if (!user?.id) return;
+      
+      try {
+        // First get the company ID for the current user
+        let { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('user_id', user.id)
           .single();
 
-        if (insertError) {
-          console.error('Error inserting team member:', {
-            error: insertError,
-            message: insertError.message,
-            details: insertError.details,
-            hint: insertError.hint,
-            code: insertError.code
-          });
-          throw insertError;
+        if (companyError) {
+          console.error('Error fetching company:', JSON.stringify(companyError, null, 2));
+          setTeamMembers([]);
+          return;
         }
 
-        console.log('Successfully added current user as team member:', insertedMember);
+        if (!companyData) {
+          // Create a company if it doesn't exist
+          const { data: newCompany, error: createError } = await supabase
+            .from('companies')
+            .insert([{
+              user_id: user.id,
+              name: 'My Company',
+              description: 'Company description'
+            }])
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating company:', JSON.stringify(createError, null, 2));
+            setTeamMembers([]);
+            return;
+          }
+
+          companyData = newCompany;
+        }
+
+        // Now fetch team members using the company ID
+        const { data: members, error } = await supabase
+          .from('team_members')
+          .select('*')
+          .eq('company_id', companyData.id);
+
+        if (error) {
+          console.error('Error fetching team members:', JSON.stringify(error, null, 2));
+          setTeamMembers([]);
+          return;
+        }
+
+        if (!members || members.length === 0) {
+          // Create a default team member if none exist
+          const { data: newMember, error: createError } = await supabase
+            .from('team_members')
+            .insert([{
+              company_id: companyData.id,
+              name: 'Team Lead',
+              email: 'team.lead@example.com',
+              role: 'Team Lead',
+              role_description: 'Leads the team and manages projects'
+            }])
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating team member:', JSON.stringify(createError, null, 2));
+            setTeamMembers([]);
+            return;
+          }
+
+          setTeamMembers(newMember ? [newMember] : []);
+        } else {
+          setTeamMembers(members);
+        }
+      } catch (error: unknown) {
+        console.error('Error in team members flow:', error instanceof Error ? error.message : String(error));
+        setTeamMembers([]);
       }
+    }, [user?.id, supabase]);
 
-      // Fetch all team members
-      const { data: allMembers, error: allMembersError } = await supabase
-        .from('team_members')
-        .select('*')
-        .eq('company_id', companyData.id);
+    fetchTeamMembers();
+  }, [user?.id, supabase]);
 
-      if (allMembersError) {
-        console.error('Error fetching all team members:', {
-          error: allMembersError,
-          message: allMembersError.message,
-          details: allMembersError.details,
-          hint: allMembersError.hint,
-          code: allMembersError.code
-        });
-        throw allMembersError;
-      }
-
-      console.log('Successfully fetched all team members:', allMembers);
-      setTeamMembers(allMembers || []);
-
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Team members operation failed:', {
-          message: error.message,
-          name: error.name
-        });
-      } else {
-        console.error('An unknown error occurred:', error);
-      }
-      setTeamMembers([]); // Reset to empty array on error
-    }
-  }, [user, companyData]);
-
-  useEffect(() => {
-    if (companyData.id) {
-      fetchTeamMembers();
-    }
-  }, [fetchTeamMembers, companyData.id]);
+  const handleAddTeamMember = () => {
+    setSelectedTeamMember(null);
+    setIsTeamModalOpen(true);
+  };
 
   const handleEditTeamMember = (member: TeamMember) => {
     setSelectedTeamMember(member);
     setIsTeamModalOpen(true);
   };
 
-  const handleSaveTeamMember = async (memberData: Omit<TeamMember, 'id'>) => {
-    if (!user?.id || !companyData.id) return;
+  const handleDeleteTeamMember = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('team_members')
+        .delete()
+        .eq('id', id);
 
+      if (error) throw error;
+
+      setTeamMembers(prev => prev.filter(member => member.id !== id));
+    } catch (error) {
+      console.error('Error deleting team member:', error);
+    }
+  };
+
+  const handleTeamMemberSubmit = async (member: TeamMember) => {
     try {
       if (selectedTeamMember) {
-        // Update existing team member
-        const { data: updatedMember, error } = await supabase
+        // Update existing member
+        const { error } = await supabase
           .from('team_members')
           .update({
-            name: memberData.name,
-            role: memberData.role,
-            roleDescription: memberData.roleDescription,
-            // Don't update email if it's the current user
-            ...(selectedTeamMember.email !== user.email ? { email: memberData.email } : {})
+            name: member.name,
+            email: member.email,
+            role: member.role,
+            roleDescription: member.roleDescription
           })
-          .eq('id', selectedTeamMember.id)
-          .select()
-          .single();
+          .eq('id', selectedTeamMember.id);
 
         if (error) throw error;
 
-        setTeamMembers(prev => prev.map(m => m.id === selectedTeamMember.id ? updatedMember : m));
+        setTeamMembers(prev =>
+          prev.map(m => (m.id === selectedTeamMember.id ? { ...m, ...member } : m))
+        );
       } else {
-        // Add new team member
-        const { data: newMember, error } = await supabase
+        // Create new member
+        const { data, error } = await supabase
           .from('team_members')
-          .insert([{
-            ...memberData,
+          .insert({
+            ...member,
             company_id: companyData.id
-          }])
+          })
           .select()
           .single();
 
         if (error) throw error;
 
-        setTeamMembers(prev => [...prev, newMember]);
+        setTeamMembers(prev => [...prev, data]);
       }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Error saving team member:', {
-          message: error.message,
-          name: error.name
-        });
-      } else {
-        console.error('An unknown error occurred:', error);
-      }
-    }
 
-    setSelectedTeamMember(undefined);
-    setIsTeamModalOpen(false);
+      setIsTeamModalOpen(false);
+    } catch (error) {
+      console.error('Error saving team member:', error);
+    }
   };
 
   const fetchBrandData = useCallback(async () => {
@@ -663,7 +630,8 @@ function MarketingArchitectureContent() {
       const { data: profiles, error } = await supabase
         .from('product_profiles')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('archived', false);
 
       if (error) throw error;
 
@@ -674,11 +642,28 @@ function MarketingArchitectureContent() {
             user_id: user.id,
             name: 'Primary Product',
             type: 'SaaS',
-            purpose_benefit: 'Help businesses manage and grow their marketing efforts',
-            audience: ['Small Business Owners', 'Marketing Teams'],
             description: 'A comprehensive marketing management platform',
+            value_proposition: 'Help businesses manage and grow their marketing efforts',
+            target_market: ['Small Business Owners', 'Marketing Teams'],
+            problems_solved: ['Marketing Strategy', 'Team Collaboration', 'Performance Tracking'],
+            key_features: ['Comprehensive audience analysis tools', 'Marketing message templates', 'Engagement tracking and analytics'],
+            benefits: ['Improve marketing effectiveness', 'Enhance team collaboration', 'Track performance metrics'],
+            price_points: [
+              {
+                id: 'price-1',
+                name: 'Basic',
+                price: '$99/month',
+                features: ['Audience analysis', 'Marketing message templates']
+              },
+              {
+                id: 'price-2',
+                name: 'Pro',
+                price: '$199/month',
+                features: ['Audience analysis', 'Marketing message templates', 'Engagement tracking and analytics']
+              }
+            ],
+            audience_ids: [],
             market_category: 'Marketing Software',
-            problem_solved: ['Marketing Strategy', 'Team Collaboration', 'Performance Tracking']
           }])
           .select()
           .single();
@@ -701,8 +686,10 @@ function MarketingArchitectureContent() {
   }, [user?.id, selectedProductId]);
 
   useEffect(() => {
-    fetchProductProfiles();
-  }, [fetchProductProfiles]);
+    if (user?.id) {
+      fetchProductProfiles();
+    }
+  }, [user?.id, fetchProductProfiles]);
 
   const handleCompanyDataChange = async (field: keyof CompanyData, value: string) => {
     setCompanyData(prev => ({
@@ -952,200 +939,113 @@ function MarketingArchitectureContent() {
   }, [user?.id]);
 
   const fetchMarketData = useCallback(async () => {
-    if (!user?.id) {
-      console.log('No user ID available');
-      return;
-    }
-    
     try {
-      console.log('Fetching market data for user:', user.id);
-      const { data, error } = await supabase
+      const session = await supabase.auth.getSession();
+      if (!session.data.session?.user?.id) {
+        console.error('No authenticated user found');
+        return;
+      }
+
+      const userId = session.data.session.user.id;
+
+      // Try to get existing data
+      const { data: existingData, error: fetchError } = await supabase
         .from('market_data')
         .select('*')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (error) {
-        console.log('Initial fetch error:', error);
-        if (error.code === 'PGRST116') { // No data found
-          console.log('No existing market data, creating new entry');
-          const { data: newData, error: insertError } = await supabase
-            .from('market_data')
-            .insert([{
-              user_id: user.id,
-              industry: '',
-              market_category: '',
-              key_players: '',
-              company_advantages: ''
-            }])
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error('Error inserting new market data:', insertError);
-            throw insertError;
-          }
-          if (newData) {
-            console.log('Successfully created new market data:', newData);
-            setMarketData(newData);
-          }
-        } else {
-          console.error('Unexpected error:', error);
-          throw error;
-        }
-      } else if (data) {
-        console.log('Successfully fetched existing market data:', data);
-        setMarketData(data);
+      if (fetchError) {
+        console.error('Error fetching market data:', fetchError.message);
+        return;
       }
-    } catch (error: unknown) {
-      console.error('Error in fetchMarketData:', error);
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack
-        });
+
+      if (existingData) {
+        setMarketData(existingData);
       } else {
-        console.error('Non-Error object thrown:', error);
-      }
-    }
-  }, [user?.id]);
+        // No data exists, create new record
+        const newData = {
+          user_id: userId,
+          industry: '',
+          market_category: '',
+          key_players: '',
+          company_advantages: ''
+        };
 
-  const handleMarketDataChange = useCallback(async (field: keyof MarketData, value: string) => {
-    if (!user?.id) return;
-
-    try {
-      setMarketData(prev => ({ ...prev, [field]: value }));
-
-      const { error } = await supabase
-        .from('market_data')
-        .upsert({
-          user_id: user.id,
-          [field]: value,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id'
-        });
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error updating market data:', error);
-    }
-  }, [user?.id]);
-
-  const testMarketDataOperations = useCallback(async () => {
-    if (!user?.id) {
-      console.log('No user ID available for testing');
-      return;
-    }
-
-    try {
-      console.log('=== Starting Market Data Operations Test ===');
-      
-      // Test 1: Select
-      console.log('Test 1: Selecting market data');
-      const { data: selectData, error: selectError } = await supabase
-        .from('market_data')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (selectError) {
-        console.error('Select Test Failed:', selectError);
-      } else {
-        console.log('Select Test Passed:', selectData);
-      }
-
-      // Test 2: Insert
-      console.log('Test 2: Inserting market data');
-      const testData = {
-        user_id: user.id,
-        industry: 'Test Industry',
-        market_category: 'Test Category',
-        key_players: 'Test Players',
-        company_advantages: 'Test Advantages'
-      };
-
-      const { data: insertData, error: insertError } = await supabase
-        .from('market_data')
-        .insert([testData])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Insert Test Failed:', insertError);
-      } else {
-        console.log('Insert Test Passed:', insertData);
-      }
-
-      // Test 3: Update
-      if (insertData?.id) {
-        console.log('Test 3: Updating market data');
-        const { data: updateData, error: updateError } = await supabase
+        const { data: createdData, error: createError } = await supabase
           .from('market_data')
-          .update({ industry: 'Updated Industry' })
-          .eq('id', insertData.id)
+          .insert(newData)
           .select()
           .single();
 
-        if (updateError) {
-          console.error('Update Test Failed:', updateError);
-        } else {
-          console.log('Update Test Passed:', updateData);
+        if (createError) {
+          console.error('Error creating market data:', createError.message);
+          return;
+        }
+
+        if (createdData) {
+          setMarketData(createdData);
         }
       }
-
-      console.log('=== Market Data Operations Test Complete ===');
     } catch (error) {
-      console.error('Test failed with error:', error);
+      console.error('Error in fetchMarketData:', error);
     }
-  }, [user?.id]);
+  }, []);
 
+  const handleMarketDataChange = useCallback(async (field: keyof MarketData, value: string) => {
+    try {
+      const session = await supabase.auth.getSession();
+      if (!session.data.session?.user?.id) {
+        console.error('No authenticated user found');
+        return;
+      }
+
+      const userId = session.data.session.user.id;
+      const previousValue = marketData[field];
+
+      // Update local state first for better UX
+      setMarketData(prev => ({ ...prev, [field]: value }));
+
+      // Update in database
+      const { error: updateError } = await supabase
+        .from('market_data')
+        .update({ [field]: value })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error updating market data:', updateError.message);
+        // Revert on error
+        setMarketData(prev => ({ ...prev, [field]: previousValue }));
+      }
+    } catch (error) {
+      console.error('Error in handleMarketDataChange:', error);
+      // Revert on error
+      setMarketData(prev => ({ ...prev, [field]: marketData[field] }));
+    }
+  }, [marketData]);
+
+  // Fetch market data on mount and when auth state changes
   useEffect(() => {
-    if (user?.id) {
-      testMarketDataOperations();
-    }
-  }, [testMarketDataOperations, user?.id]);
+    const checkAuthAndFetchData = async () => {
+      const session = await supabase.auth.getSession();
+      if (session.data.session?.user?.id) {
+        fetchMarketData();
+      }
+    };
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchCompanyData();
-      fetchBrandData();
-      fetchAudienceProfiles();
-      fetchProductProfiles();
-      fetchCompetitors();
-      fetchMarketData();
-    }
-  }, [user?.id, fetchCompanyData, fetchBrandData, fetchAudienceProfiles, fetchProductProfiles, fetchCompetitors, fetchMarketData]);
+    checkAuthAndFetchData();
 
-  // Initialize state with empty arrays and strings
-  const defaultAudienceProfile: AudienceProfile = {
-    id: '',
-    user_id: '',
-    name: '',
-    description: '',
-    problems: [],
-    product_solutions: [],
-    attraction_channels: [],
-    engagement_channels: [],
-    valuable_segments: '',
-    common_objections: [],
-    common_channels: [],
-    trusted_platforms: [],
-    complementary_problems: [],
-    voc_data: [],
-    notes: [],
-  };
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.id) {
+        fetchMarketData();
+      }
+    });
 
-  // Update defaultAudienceProfile when user is available
-  const currentAudienceProfile = user?.id
-    ? { ...defaultAudienceProfile, user_id: user.id }
-    : defaultAudienceProfile;
-
-  // Get the selected profile or use default values
-  const selectedProfile = selectedAudienceId 
-    ? audienceProfiles.find(p => p.id === selectedAudienceId) || currentAudienceProfile
-    : currentAudienceProfile;
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchMarketData]);
 
   const handleCreateCompetitor = async () => {
     if (!user?.id) return;
@@ -1220,6 +1120,92 @@ function MarketingArchitectureContent() {
 
     const updates = { [field]: value };
     handleUpdateCompetitor(selectedCompetitorId, updates);
+  };
+
+  const [selectedProfile, setSelectedProfile] = useState<AudienceProfile | undefined>();
+
+  useEffect(() => {
+    if (selectedAudienceId) {
+      const profile = audienceProfiles.find(p => p.id === selectedAudienceId);
+      setSelectedProfile(profile);
+    }
+  }, [selectedAudienceId, audienceProfiles]);
+
+  const handleAddProduct = () => {
+    setSelectedProductId(null);
+    setIsProductModalOpen(true);
+  };
+
+  const handleEditProduct = (id: string) => {
+    setSelectedProductId(id);
+    setIsProductModalOpen(true);
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('product_profiles')
+        .update({ archived: true })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProductProfiles(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Error archiving product:', error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const handleProductSubmit = async (product: Partial<ProductProfile>) => {
+    if (!user?.id) return;
+
+    try {
+      if (selectedProductId) {
+        // Update existing product
+        const { error } = await supabase
+          .from('product_profiles')
+          .update({
+            name: product.name,
+            type: product.type,
+            description: product.description,
+            value_proposition: product.value_proposition,
+            target_market: product.target_market,
+            problems_solved: product.problems_solved,
+            key_features: product.key_features,
+            benefits: product.benefits,
+            price_points: product.price_points,
+            audience_ids: product.audience_ids,
+            market_category: product.market_category,
+          })
+          .eq('id', selectedProductId);
+
+        if (error) throw error;
+
+        setProductProfiles(prev =>
+          prev.map(p => (p.id === selectedProductId ? { ...p, ...product } : p))
+        );
+      } else {
+        // Create new product
+        const { data, error } = await supabase
+          .from('product_profiles')
+          .insert({
+            ...product,
+            user_id: user.id,
+            archived: false
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setProductProfiles(prev => [...prev, data]);
+      }
+
+      setIsProductModalOpen(false);
+      setSelectedProductId(null);
+    } catch (error) {
+      console.error('Error saving product:', error instanceof Error ? error.message : String(error));
+    }
   };
 
   return (
@@ -1347,7 +1333,7 @@ function MarketingArchitectureContent() {
                       <div className="mt-4 sm:mt-0">
                         <button
                           type="button"
-                          onClick={() => setIsTeamModalOpen(true)}
+                          onClick={handleAddTeamMember}
                           className="inline-flex items-center rounded-md bg-coral-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
                         >
                           <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5 text-white" aria-hidden="true" />
@@ -1385,6 +1371,26 @@ function MarketingArchitectureContent() {
                               </span>
                             </div>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTeamMember(member.id)}
+                            className="absolute right-0 top-0 p-2 text-red-600 hover:text-red-900"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -1467,137 +1473,35 @@ function MarketingArchitectureContent() {
             <Tab.Panel>
               <div className="text-center py-12">
                 <h3 className="mt-2 text-sm font-semibold text-gray-900">No channels configured</h3>
-                <p className="mt-1 text-sm text-gray-500">Get started by creating a new channel.</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by creating a new channel.
+                </p>
+              </div>
+            </Tab.Panel>
+
+            {/* Tech Stack Panel */}
+            <Tab.Panel>
+              <div className="text-center py-12">
+                <h3 className="mt-2 text-sm font-semibold text-gray-900">No tech stack configured</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by adding your tech stack.
+                </p>
               </div>
             </Tab.Panel>
 
             {/* Audience Panel */}
-            <Tab.Panel className="space-y-6">
-              <div className="border-b border-gray-200 pb-5 mb-8">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-base font-semibold leading-6 text-gray-900">Audience Profiles</h2>
-                    <p className="mt-2 text-sm text-gray-500">
-                      Create and manage detailed profiles of your target audience segments.
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleCreateAudienceProfile}
-                    type="button"
-                    className="inline-flex items-center rounded-md bg-[#d06e63] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d06e63]"
-                  >
-                    <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5 text-white" aria-hidden="true" />
-                    New Profile
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6">
-                {audienceProfiles.map((profile) => (
-                  <div
-                    key={profile.id}
-                    className={classNames(
-                      'relative flex items-center space-x-3 rounded-lg border px-6 py-5 shadow-sm focus-within:ring-2 focus-within:ring-coral-500 focus-within:ring-offset-2 hover:border-gray-400',
-                      selectedAudienceId === profile.id ? 'border-coral-500 bg-coral-50' : 'border-gray-300 bg-white'
-                    )}
-                  >
-                    <div className="flex-shrink-0">
-                      <div className={classNames(
-                        'h-10 w-10 rounded-full flex items-center justify-center',
-                        selectedAudienceId === profile.id ? 'bg-coral-600' : 'bg-coral-500'
-                      )}>
-                        <span className="text-white font-medium text-sm">
-                          {profile.name.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                    </div>
-                    <div 
-                      className="min-w-0 flex-1 cursor-pointer"
-                      onClick={() => setSelectedAudienceId(profile.id || undefined)}
-                    >
-                      <p className="text-sm font-medium text-gray-900">{profile.name}</p>
-                      <p className="truncate text-sm text-gray-500">{profile.description || 'No description'}</p>
-                    </div>
-                    <Menu as="div" className="relative inline-block text-left">
-                      <div>
-                        <Menu.Button className="flex items-center rounded-full p-2 bg-white hover:bg-teal-50">
-                          <span className="sr-only">Open options</span>
-                          <EllipsisVerticalIcon className="h-5 w-5" style={{ color: '#d06e63' }} aria-hidden="true" />
-                        </Menu.Button>
-                      </div>
-
-                      <Transition
-                        as={Fragment}
-                        enter="transition ease-out duration-100"
-                        enterFrom="transform opacity-0 scale-95"
-                        enterTo="transform opacity-100 scale-100"
-                        leave="transition ease-in duration-75"
-                        leaveFrom="transform opacity-100 scale-100"
-                        leaveTo="transform opacity-0 scale-95"
-                      >
-                        <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                          <div className="py-1">
-                            <Menu.Item>
-                              {({ active }) => (
-                                <button
-                                  onClick={() => setSelectedAudienceId(profile.id || undefined)}
-                                  className={classNames(
-                                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                    'block w-full px-4 py-2 text-left text-sm'
-                                  )}
-                                >
-                                  Edit
-                                </button>
-                              )}
-                            </Menu.Item>
-                            <Menu.Item>
-                              {({ active }) => (
-                                <button
-                                  onClick={() => handleArchiveAudienceProfile(profile.id)}
-                                  className={classNames(
-                                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                    'block w-full px-4 py-2 text-left text-sm'
-                                  )}
-                                >
-                                  Archive
-                                </button>
-                              )}
-                            </Menu.Item>
-                            <Menu.Item>
-                              {({ active }) => (
-                                <button
-                                  onClick={() => handleDeleteAudienceProfile(profile.id)}
-                                  className={classNames(
-                                    active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                    'block w-full px-4 py-2 text-left text-sm text-red-600'
-                                  )}
-                                >
-                                  Delete
-                                </button>
-                              )}
-                            </Menu.Item>
-                          </div>
-                        </Menu.Items>
-                      </Transition>
-                    </Menu>
-                  </div>
-                ))}
-              </div>
-
-              {selectedAudienceId && (
-                <div className="mt-6">
-                  <AudienceProfileDetails
-                    profile={selectedProfile}
-                    onProfileChange={(field, value) => {
-                      // Only pass string or string[] values
-                      if (typeof value === 'boolean') return;
-                      handleAudienceProfileChange(selectedAudienceId, field, value);
-                    }}
-                    onAddVoiceOfCustomer={(data) => handleAddVoiceOfCustomer(selectedAudienceId, data)}
-                    onAddNote={(data) => handleAddNote(selectedAudienceId, data)}
-                  />
-                </div>
-              )}
+            <Tab.Panel>
+              <AudienceProfileDetails
+                profiles={audienceProfiles}
+                selectedProfileId={selectedAudienceId}
+                onProfileSelect={(id) => setSelectedAudienceId(id)}
+                onCreateProfile={handleCreateAudienceProfile}
+                onArchiveProfile={handleArchiveAudienceProfile}
+                onDeleteProfile={handleDeleteAudienceProfile}
+                onAddVoiceOfCustomer={handleAddVoiceOfCustomer}
+                onAddNote={handleAddNote}
+                onChange={(profileId, field, value) => handleAudienceProfileChange(profileId, field, value)}
+              />
             </Tab.Panel>
 
             {/* Products Panel */}
@@ -1664,7 +1568,7 @@ function MarketingArchitectureContent() {
                               <Menu.Item>
                                 {({ active }) => (
                                   <button
-                                    onClick={() => {/* TODO: Add edit functionality */}}
+                                    onClick={() => handleEditProduct(profile.id)}
                                     className={classNames(
                                       active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                                       'block w-full px-4 py-2 text-left text-sm'
@@ -1677,13 +1581,13 @@ function MarketingArchitectureContent() {
                               <Menu.Item>
                                 {({ active }) => (
                                   <button
-                                    onClick={() => {/* TODO: Add archive functionality */}}
+                                    onClick={() => handleDeleteProduct(profile.id)}
                                     className={classNames(
                                       active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                                      'block w-full px-4 py-2 text-left text-sm'
+                                      'block w-full px-4 py-2 text-left text-sm text-red-600'
                                     )}
                                   >
-                                    Archive
+                                    Delete
                                   </button>
                                 )}
                               </Menu.Item>
@@ -1715,18 +1619,79 @@ function MarketingArchitectureContent() {
                           onChange={(value) => handleProductDataChange('type', value)}
                         />
                         <FormField
-                          label="Purpose/Benefit"
-                          id="purpose_benefit"
-                          type="textarea"
-                          value={profile.purpose_benefit}
-                          onChange={(value) => handleProductDataChange('purpose_benefit', value)}
-                        />
-                        <FormField
                           label="Description"
                           id="description"
                           type="textarea"
                           value={profile.description}
                           onChange={(value) => handleProductDataChange('description', value)}
+                        />
+                        <FormField
+                          label="Value Proposition"
+                          id="value_proposition"
+                          type="textarea"
+                          value={profile.value_proposition}
+                          onChange={(value) => handleProductDataChange('value_proposition', value)}
+                        />
+                        <FormField
+                          label="Target Market"
+                          id="target_market"
+                          type="textarea"
+                          value={(profile.target_market || []).join(', ')}
+                          onChange={(value) => handleProductDataChange('target_market', value.split(', ').filter(Boolean))}
+                        />
+                        <FormField
+                          label="Problems Solved"
+                          id="problems_solved"
+                          type="textarea"
+                          value={(profile.problems_solved || []).join(', ')}
+                          onChange={(value) => handleProductDataChange('problems_solved', value.split(', ').filter(Boolean))}
+                        />
+                        <FormField
+                          label="Key Features"
+                          id="key_features"
+                          type="textarea"
+                          value={(profile.key_features || []).join(', ')}
+                          onChange={(value) => handleProductDataChange('key_features', value.split(', ').filter(Boolean))}
+                        />
+                        <FormField
+                          label="Benefits"
+                          id="benefits"
+                          type="textarea"
+                          value={(profile.benefits || []).join(', ')}
+                          onChange={(value) => handleProductDataChange('benefits', value.split(', ').filter(Boolean))}
+                        />
+                        <div className="space-y-4">
+                          <h3 className="text-sm font-medium text-gray-900">Price Points</h3>
+                          {(profile.price_points || []).map((pricePoint, index) => (
+                            <div key={pricePoint.id} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                              <FormField
+                                label="Name"
+                                id={`price_point_name_${index}`}
+                                value={pricePoint.name}
+                                onChange={(value) => handleProductDataChange('price_points', profile.price_points.map((pp, i) => i === index ? { ...pp, name: value } : pp))}
+                              />
+                              <FormField
+                                label="Price"
+                                id={`price_point_price_${index}`}
+                                value={pricePoint.price}
+                                onChange={(value) => handleProductDataChange('price_points', profile.price_points.map((pp, i) => i === index ? { ...pp, price: value } : pp))}
+                              />
+                              <FormField
+                                label="Features"
+                                id={`price_point_features_${index}`}
+                                type="textarea"
+                                value={(pricePoint.features || []).join(', ')}
+                                onChange={(value) => handleProductDataChange('price_points', profile.price_points.map((pp, i) => i === index ? { ...pp, features: value.split(', ').filter(Boolean) } : pp))}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <FormField
+                          label="Audience IDs"
+                          id="audience_ids"
+                          type="textarea"
+                          value={(profile.audience_ids || []).join(', ')}
+                          onChange={(value) => handleProductDataChange('audience_ids', value.split(', ').filter(Boolean))}
                         />
                         <FormField
                           label="Market Category"
@@ -1740,95 +1705,20 @@ function MarketingArchitectureContent() {
                 </div>
               )}
 
-              {/* Add Product Profile Modal */}
-              <Transition.Root show={isProductModalOpen} as={Fragment}>
-                <Dialog as="div" className="relative z-10" onClose={setIsProductModalOpen}>
-                  <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-
-                  <div className="fixed inset-0 z-10 overflow-y-auto">
-                    <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                      <Transition.Child
-                        as={Fragment}
-                        enter="ease-out duration-300"
-                        enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                        enterTo="opacity-100 translate-y-0 sm:scale-100"
-                        leave="ease-in duration-200"
-                        leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                        leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                      >
-                        <Dialog.Panel className="relative transform rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                          <div>
-                            <div className="mt-3 text-center sm:mt-5">
-                              <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
-                                Add Product Profile
-                              </Dialog.Title>
-                              <div className="mt-2">
-                                <div className="space-y-4">
-                                  <FormField
-                                    label="Product Name"
-                                    id="name"
-                                    value={newProductProfile.name || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, name: value }))}
-                                  />
-                                  <FormField
-                                    label="Type"
-                                    id="type"
-                                    value={newProductProfile.type || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, type: value }))}
-                                  />
-                                  <FormField
-                                    label="Purpose/Benefit"
-                                    id="purpose_benefit"
-                                    type="textarea"
-                                    value={newProductProfile.purpose_benefit || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, purpose_benefit: value }))}
-                                  />
-                                  <FormField
-                                    label="Description"
-                                    id="description"
-                                    type="textarea"
-                                    value={newProductProfile.description || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, description: value }))}
-                                  />
-                                  <FormField
-                                    label="Market Category"
-                                    id="market_category"
-                                    value={newProductProfile.market_category || ''}
-                                    onChange={(value) => setNewProductProfile(prev => ({ ...prev, market_category: value }))}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                            <button
-                              type="button"
-                              className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2"
-                              onClick={handleSaveProductProfile}
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
-                              onClick={() => {
-                                setIsProductModalOpen(false);
-                                setNewProductProfile({});
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </Dialog.Panel>
-                      </Transition.Child>
-                    </div>
-                  </div>
-                </Dialog>
-              </Transition.Root>
+              {/* Product Modal */}
+              <ProductModal
+                isOpen={isProductModalOpen}
+                onClose={() => {
+                  setIsProductModalOpen(false);
+                  setSelectedProductId(null);
+                }}
+                onSave={handleProductSubmit}
+                initialProduct={productProfiles.find(p => p.id === selectedProductId)}
+              />
             </Tab.Panel>
 
             {/* Market Panel */}
-            <Tab.Panel className="space-y-6">
+            <Tab.Panel>
               {/* Market Overview Section */}
               <div className="space-y-6">
                 <div className="border-b border-gray-200 pb-5">
@@ -1844,7 +1734,7 @@ function MarketingArchitectureContent() {
                         label="Industry"
                         id="industry"
                         placeholder="Enter your industry"
-                        value={marketData.industry}
+                        value={marketData?.industry || ''}
                         onChange={(value) => handleMarketDataChange('industry', value)}
                       />
                       <FormField
@@ -1852,7 +1742,7 @@ function MarketingArchitectureContent() {
                         id="market_category"
                         type="textarea"
                         placeholder="Define your market category"
-                        value={marketData.market_category}
+                        value={marketData?.market_category || ''}
                         onChange={(value) => handleMarketDataChange('market_category', value)}
                       />
                       <FormField
@@ -1860,7 +1750,7 @@ function MarketingArchitectureContent() {
                         id="key_players"
                         type="textarea"
                         placeholder="Describe the key players in your market"
-                        value={marketData.key_players}
+                        value={marketData?.key_players || ''}
                         onChange={(value) => handleMarketDataChange('key_players', value)}
                       />
                       <FormField
@@ -1868,7 +1758,7 @@ function MarketingArchitectureContent() {
                         id="company_advantages"
                         type="textarea"
                         placeholder="List your company's competitive advantages"
-                        value={marketData.company_advantages}
+                        value={marketData?.company_advantages || ''}
                         onChange={(value) => handleMarketDataChange('company_advantages', value)}
                       />
                     </div>
@@ -2066,7 +1956,7 @@ function MarketingArchitectureContent() {
             </Tab.Panel>
 
             {/* Other panels */}
-            <Tab.Panel>Tech Stack Content</Tab.Panel>
+            <Tab.Panel>Audience Content</Tab.Panel>
           </Tab.Panels>
         </Tab.Group>
       </div>
@@ -2077,7 +1967,7 @@ function MarketingArchitectureContent() {
           setIsTeamModalOpen(false);
           setSelectedTeamMember(undefined);
         }}
-        onSave={handleSaveTeamMember}
+        onSave={handleTeamMemberSubmit}
         initialMember={selectedTeamMember}
         currentUserEmail={user?.email}
       />
@@ -2094,7 +1984,7 @@ function MarketingArchitectureContent() {
                 enter="ease-out duration-300"
                 enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 enterTo="opacity-100 translate-y-0 sm:scale-100"
-                leave="ease-in duration-200"
+                leave="transition ease-in duration-200"
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
@@ -2227,10 +2117,12 @@ function MarketingArchitectureContent() {
   );
 }
 
-export default function Page() {
+const Page = () => {
   return (
     <div className="py-6">
       <MarketingArchitectureContent />
     </div>
   );
-}
+};
+
+export default Page;

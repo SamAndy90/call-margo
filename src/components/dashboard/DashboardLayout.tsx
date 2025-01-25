@@ -63,11 +63,13 @@ function DashboardLayout({
           <div className="flex items-center px-4 py-3">
             <div className="flex-shrink-0">
               <Image
+                className="h-8 w-auto"
                 src="/images/margo-logo.svg"
                 alt="Margo"
-                width={32}
+                width={120}
                 height={32}
-                className="h-8 w-auto"
+                priority
+                style={{ height: 'auto' }}
               />
             </div>
             <button

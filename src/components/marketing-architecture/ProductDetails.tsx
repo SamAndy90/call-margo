@@ -1,49 +1,47 @@
+'use client';
+
 import React, { useState } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import FormField from '@/components/forms/FormField';
 import ListField from '@/components/forms/ListField';
 
-interface ProductNote {
-  id?: string;
-  product_id: string;
-  title: string;
-  content: string;
-  created_by?: string;
-  created_at?: Date;
-  updated_at?: Date;
+interface PricePoint {
+  id: string;
+  name: string;
+  price: string;
+  features: string[];
 }
 
 interface Product {
-  id?: string;
-  user_id: string;
+  id: string;
   name: string;
-  type: 'Physical Product' | '1-1 Service' | 'Course' | 'Community' | 'SaaS' | 'Digital Product' | 'Software' | 'Other';
-  custom_type?: string;
-  purpose_benefit: string;
-  audience_ids: string[];
   description: string;
-  market_category: string;
+  value_proposition: string;
+  target_market: string[];
   problems_solved: string[];
-  price_points: {
-    name: string;
-    price: string;
-    features: string[];
-  }[];
-  notes?: ProductNote[];
-  created_at?: Date;
-  updated_at?: Date;
+  key_features: string[];
+  benefits: string[];
+  price_points: PricePoint[];
+  audience_ids: string[];
 }
 
 interface Props {
   product: Product;
-  audiences: { id: string; name: string }[];
-  onProductChange: (field: keyof Product, value: string | string[] | Product['price_points']) => void;
-  onAddNote: (data: Omit<ProductNote, 'id' | 'product_id' | 'created_by'>) => void;
+  onProductChange: (field: keyof Product, value: any) => void;
+  onAddNote: (data: any) => void;
 }
+
+const defaultAudiences = [
+  { id: '1', name: 'Small Business Owners', selected: false },
+  { id: '2', name: 'Marketing Professionals', selected: false },
+  { id: '3', name: 'Startup Founders', selected: false },
+  { id: '4', name: 'Enterprise Companies', selected: false },
+  { id: '5', name: 'Freelancers', selected: false },
+  { id: '6', name: 'E-commerce Businesses', selected: false },
+];
 
 export default function ProductDetails({
   product,
-  audiences,
   onProductChange,
   onAddNote,
 }: Props) {
@@ -52,6 +50,10 @@ export default function ProductDetails({
     title: '',
     content: '',
   });
+  const [selectedAudiences, setSelectedAudiences] = useState(defaultAudiences.map(audience => ({
+    ...audience,
+    selected: product.audience_ids.includes(audience.id)
+  })));
 
   const handleNoteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,156 +62,184 @@ export default function ProductDetails({
     setShowNoteForm(false);
   };
 
+  const handleAudienceChange = (audienceId: string) => {
+    setSelectedAudiences(selectedAudiences.map(audience =>
+      audience.id === audienceId
+        ? { ...audience, selected: !audience.selected }
+        : audience
+    ));
+    const newAudiences = selectedAudiences.filter(a => a.selected).map(a => a.id);
+    onProductChange('audience_ids', newAudiences);
+  };
+
   return (
     <div className="space-y-8">
       {/* Basic Information */}
       <div>
-        <h3 className="text-lg font-medium leading-6 text-gray-900">Basic Information</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium leading-6 text-gray-900">Basic Information</h3>
+          <button
+            type="button"
+            onClick={() => {
+              const newAudiences = [...product.audience_ids, ''];
+              onProductChange('audience_ids', newAudiences);
+            }}
+            className="inline-flex items-center rounded-md border border-transparent bg-[#D06E63] px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-[#BB635A] focus:outline-none focus:ring-2 focus:ring-[#D06E63] focus:ring-offset-2"
+          >
+            <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
+            Add Audience Profile
+          </button>
+        </div>
         <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-          <div className="sm:col-span-4">
+          <div className="sm:col-span-6">
             <FormField
+              id="product-name"
               label="Product Name"
               value={product.name}
               onChange={(value) => onProductChange('name', value)}
             />
           </div>
 
-          <div className="sm:col-span-4">
-            <label className="block text-sm font-medium text-gray-700">Type</label>
-            <select
-              value={product.type}
-              onChange={(e) => onProductChange('type', e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-coral-500 focus:ring-coral-500 sm:text-sm"
-            >
-              <option value="Physical Product">Physical Product</option>
-              <option value="1-1 Service">1-1 Service</option>
-              <option value="Course">Course</option>
-              <option value="Community">Community</option>
-              <option value="SaaS">SaaS</option>
-              <option value="Digital Product">Digital Product</option>
-              <option value="Software">Software</option>
-              <option value="Other">Other</option>
-            </select>
+          <div className="sm:col-span-6">
+            <FormField
+              id="description"
+              label="Description"
+              value={product.description}
+              onChange={(value) => onProductChange('description', value)}
+              type="textarea"
+            />
           </div>
-
-          {product.type === 'Other' && (
-            <div className="sm:col-span-4">
-              <FormField
-                label="Custom Type"
-                value={product.custom_type || ''}
-                onChange={(value) => onProductChange('custom_type', value)}
-              />
-            </div>
-          )}
 
           <div className="sm:col-span-6">
             <FormField
-              label="Purpose/Benefit"
-              value={product.purpose_benefit}
-              onChange={(value) => onProductChange('purpose_benefit', value)}
-              multiline
+              id="value-proposition"
+              label="Value Proposition"
+              value={product.value_proposition}
+              onChange={(value) => onProductChange('value_proposition', value)}
+              type="textarea"
             />
           </div>
 
           <div className="sm:col-span-6">
             <label className="block text-sm font-medium text-gray-700">Target Audiences</label>
             <div className="mt-1">
-              {audiences.map((audience) => (
+              {selectedAudiences.map((audience) => (
                 <label key={audience.id} className="inline-flex items-center mr-4 mt-2">
                   <input
                     type="checkbox"
-                    checked={product.audience_ids.includes(audience.id)}
-                    onChange={(e) => {
-                      const newAudiences = e.target.checked
-                        ? [...product.audience_ids, audience.id]
-                        : product.audience_ids.filter((id) => id !== audience.id);
-                      onProductChange('audience_ids', newAudiences);
-                    }}
-                    className="rounded border-gray-300 text-coral-600 focus:ring-coral-500"
+                    checked={audience.selected}
+                    onChange={() => handleAudienceChange(audience.id)}
+                    className="rounded border-gray-300 text-[#D06E63] focus:ring-[#D06E63]"
                   />
                   <span className="ml-2 text-sm text-gray-700">{audience.name}</span>
                 </label>
               ))}
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* Market & Features */}
+      <div>
+        <h3 className="text-lg font-medium leading-6 text-gray-900">Market & Features</h3>
+        <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-6">
-            <FormField
-              label="Description"
-              value={product.description}
-              onChange={(value) => onProductChange('description', value)}
-              multiline
-            />
-          </div>
-
-          <div className="sm:col-span-4">
-            <FormField
-              label="Market Category"
-              value={product.market_category}
-              onChange={(value) => onProductChange('market_category', value)}
+            <ListField
+              label="Target Market"
+              items={product.target_market}
+              onChange={(items) => onProductChange('target_market', items)}
+              placeholder="Add target market segment..."
             />
           </div>
 
           <div className="sm:col-span-6">
             <ListField
               label="Problems Solved"
-              values={product.problems_solved}
-              onChange={(values) => onProductChange('problems_solved', values)}
+              items={product.problems_solved}
+              onChange={(items) => onProductChange('problems_solved', items)}
+              placeholder="Add a problem..."
+            />
+          </div>
+
+          <div className="sm:col-span-6">
+            <ListField
+              label="Key Features"
+              items={product.key_features}
+              onChange={(items) => onProductChange('key_features', items)}
+              placeholder="Add a feature..."
+            />
+          </div>
+
+          <div className="sm:col-span-6">
+            <ListField
+              label="Benefits"
+              items={product.benefits}
+              onChange={(items) => onProductChange('benefits', items)}
+              placeholder="Add a benefit..."
             />
           </div>
         </div>
       </div>
 
-      {/* Price Points */}
+      {/* Pricing */}
       <div>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">Price Points</h3>
+          <h3 className="text-lg font-medium leading-6 text-gray-900">Pricing Tiers</h3>
           <button
             type="button"
             onClick={() => {
               const newPricePoints = [
                 ...product.price_points,
-                { name: '', price: '', features: [] },
+                { id: '', name: '', price: '', features: [] },
               ];
               onProductChange('price_points', newPricePoints);
             }}
-            className="inline-flex items-center rounded-md bg-coral-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2"
+            className="inline-flex items-center rounded-md border border-transparent bg-[#D06E63] px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-[#BB635A] focus:outline-none focus:ring-2 focus:ring-[#D06E63] focus:ring-offset-2"
           >
             <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
-            Add Price Point
+            Add Pricing Tier
           </button>
         </div>
-        <div className="mt-4 space-y-4">
+        <div className="mt-6 space-y-6">
           {product.price_points.map((pricePoint, index) => (
-            <div key={index} className="rounded-lg border border-gray-200 p-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                  label="Name"
-                  value={pricePoint.name}
-                  onChange={(value) => {
-                    const newPricePoints = [...product.price_points];
-                    newPricePoints[index] = { ...pricePoint, name: value };
-                    onProductChange('price_points', newPricePoints);
-                  }}
-                />
-                <FormField
-                  label="Price"
-                  value={pricePoint.price}
-                  onChange={(value) => {
-                    const newPricePoints = [...product.price_points];
-                    newPricePoints[index] = { ...pricePoint, price: value };
-                    onProductChange('price_points', newPricePoints);
-                  }}
-                />
-                <div className="sm:col-span-2">
-                  <ListField
-                    label="Features"
-                    values={pricePoint.features}
-                    onChange={(values) => {
+            <div key={pricePoint.id || index} className="border rounded-lg p-4">
+              <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <div className="sm:col-span-3">
+                  <FormField
+                    id={`price-point-name-${index}`}
+                    label="Tier Name"
+                    value={pricePoint.name}
+                    onChange={(value) => {
                       const newPricePoints = [...product.price_points];
-                      newPricePoints[index] = { ...pricePoint, features: values };
+                      newPricePoints[index] = { ...pricePoint, name: value };
                       onProductChange('price_points', newPricePoints);
                     }}
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <FormField
+                    id={`price-point-price-${index}`}
+                    label="Price"
+                    value={pricePoint.price}
+                    onChange={(value) => {
+                      const newPricePoints = [...product.price_points];
+                      newPricePoints[index] = { ...pricePoint, price: value };
+                      onProductChange('price_points', newPricePoints);
+                    }}
+                  />
+                </div>
+
+                <div className="sm:col-span-6">
+                  <ListField
+                    label="Features"
+                    items={pricePoint.features}
+                    onChange={(items) => {
+                      const newPricePoints = [...product.price_points];
+                      newPricePoints[index] = { ...pricePoint, features: items };
+                      onProductChange('price_points', newPricePoints);
+                    }}
+                    placeholder="Add a feature..."
                   />
                 </div>
               </div>
@@ -222,7 +252,7 @@ export default function ProductDetails({
                   }}
                   className="text-sm text-red-600 hover:text-red-500"
                 >
-                  Remove Price Point
+                  Remove Pricing Tier
                 </button>
               </div>
             </div>
@@ -242,7 +272,7 @@ export default function ProductDetails({
           <button
             type="button"
             onClick={() => setShowNoteForm(true)}
-            className="inline-flex items-center rounded-md bg-coral-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2"
+            className="inline-flex items-center rounded-md border border-transparent bg-[#D06E63] px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-[#BB635A] focus:outline-none focus:ring-2 focus:ring-[#D06E63] focus:ring-offset-2"
           >
             <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
             Add Note
@@ -253,27 +283,29 @@ export default function ProductDetails({
           <form onSubmit={handleNoteSubmit} className="mt-4">
             <div className="space-y-4">
               <FormField
+                id="note-title"
                 label="Title"
                 value={newNote.title}
                 onChange={(value) => setNewNote({ ...newNote, title: value })}
               />
               <FormField
+                id="note-content"
                 label="Content"
                 value={newNote.content}
                 onChange={(value) => setNewNote({ ...newNote, content: value })}
-                multiline
+                type="textarea"
               />
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setShowNoteForm(false)}
-                  className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                  className="rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex justify-center rounded-md bg-coral-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
+                  className="inline-flex justify-center rounded-md border border-transparent bg-[#D06E63] px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#BB635A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D06E63]"
                 >
                   Save Note
                 </button>
@@ -284,42 +316,7 @@ export default function ProductDetails({
 
         <div className="mt-6 flow-root">
           <ul className="-mb-8">
-            {product.notes?.map((note, noteIdx) => (
-              <li key={note.id}>
-                <div className="relative pb-8">
-                  {noteIdx !== product.notes!.length - 1 ? (
-                    <span
-                      className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200"
-                      aria-hidden="true"
-                    />
-                  ) : null}
-                  <div className="relative flex space-x-3">
-                    <div>
-                      <span className="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center ring-8 ring-white">
-                        <span className="text-white text-sm">
-                          {note.title.charAt(0).toUpperCase()}
-                        </span>
-                      </span>
-                    </div>
-                    <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{note.title}</p>
-                        <p className="mt-2 text-sm text-gray-500 whitespace-pre-wrap">
-                          {note.content}
-                        </p>
-                      </div>
-                      <div className="whitespace-nowrap text-right text-sm text-gray-500">
-                        <time dateTime={note.created_at?.toISOString()}>
-                          {note.created_at
-                            ? new Date(note.created_at).toLocaleDateString()
-                            : 'Unknown date'}
-                        </time>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))}
+            {/* Add notes here */}
           </ul>
         </div>
       </div>

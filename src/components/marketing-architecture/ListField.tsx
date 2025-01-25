@@ -1,25 +1,27 @@
-import React, { useState } from 'react';
+'use client';
+
+import { useState } from 'react';
 
 interface ListFieldProps {
   label: string;
-  values: string[];
-  onChange: (values: string[]) => void;
+  items: string[];
+  onChange: (items: string[]) => void;
+  placeholder?: string;
 }
 
-export default function ListField({ label, values, onChange }: ListFieldProps) {
+export default function ListField({ label, items, onChange, placeholder }: ListFieldProps) {
   const [newItem, setNewItem] = useState('');
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItem.trim()) {
-      onChange([...values, newItem.trim()]);
+      onChange([...items, newItem.trim()]);
       setNewItem('');
     }
   };
 
   const handleRemoveItem = (index: number) => {
-    const newValues = values.filter((_, i) => i !== index);
-    onChange(newValues);
+    onChange(items.filter((_, i) => i !== index));
   };
 
   return (
@@ -31,25 +33,24 @@ export default function ListField({ label, values, onChange }: ListFieldProps) {
             type="text"
             value={newItem}
             onChange={(e) => setNewItem(e.target.value)}
+            placeholder={placeholder}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral-500 focus:ring-coral-500 sm:text-sm"
-            placeholder="Add new item"
           />
           <button
             type="submit"
-            style={{ backgroundColor: '#d06e63' }}
-            className="inline-flex items-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2"
+            className="inline-flex items-center rounded-md border border-transparent bg-coral-600 px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-coral-700 focus:outline-none focus:ring-2 focus:ring-coral-500 focus:ring-offset-2"
           >
             Add
           </button>
         </form>
         <ul className="mt-2 space-y-2">
-          {values.map((item, index) => (
+          {items.map((item, index) => (
             <li key={index} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-2">
               <span className="text-sm text-gray-700">{item}</span>
               <button
                 type="button"
                 onClick={() => handleRemoveItem(index)}
-                className="text-gray-400 hover:text-gray-500"
+                className="ml-2 text-gray-400 hover:text-gray-500"
               >
                 <span className="sr-only">Remove</span>
                 <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

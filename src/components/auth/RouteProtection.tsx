@@ -21,7 +21,9 @@ export default function RouteProtection({ children }: Props) {
       }
     };
 
-    const subscription = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         router.push('/signin');
       }

@@ -12,35 +12,19 @@ export async function middleware(req: NextRequest) {
 
   // If there's no session and the user is trying to access a protected route
   if (!session && req.nextUrl.pathname.startsWith('/dashboard')) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = '/signin';
-    redirectUrl.searchParams.set(`redirectedFrom`, req.nextUrl.pathname);
+    const redirectUrl = new URL('/signin', req.url);
+    redirectUrl.searchParams.set('redirectedFrom', req.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
   // If there's a session and the user is trying to access auth pages
-  if (session && (
-    req.nextUrl.pathname.startsWith('/signin') ||
-    req.nextUrl.pathname.startsWith('/signup') ||
-    req.nextUrl.pathname === '/'
-  )) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = '/dashboard';
-    return NextResponse.redirect(redirectUrl);
+  if (session && (req.nextUrl.pathname === '/signin' || req.nextUrl.pathname === '/signup')) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   return res;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public|images).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
