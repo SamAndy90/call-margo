@@ -8,7 +8,7 @@ import {
   HomeIcon,
   RocketLaunchIcon,
   ChartBarIcon,
-  UsersIcon,
+  BuildingLibraryIcon,
   DocumentTextIcon,
   Cog6ToothIcon,
   XMarkIcon,
@@ -19,7 +19,7 @@ const navigation = [
   { name: 'Overview', href: '/dashboard', icon: HomeIcon },
   { name: 'Campaigns', href: '/dashboard/campaigns', icon: RocketLaunchIcon },
   { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
-  { name: 'Audience', href: '/dashboard/audience', icon: UsersIcon },
+  { name: 'Marketing Architecture', href: '/dashboard/architecture', icon: BuildingLibraryIcon },
   { name: 'Content', href: '/dashboard/content', icon: DocumentTextIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];
