@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -28,8 +29,15 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-semibold text-gray-900">
-              Margo OS
+            <Link href="/" className="relative w-24 h-8">
+              <Image
+                src="/images/margo-logo.svg"
+                alt="Margo"
+                fill
+                className="object-contain"
+                priority
+                sizes="(max-width: 768px) 100px, 150px"
+              />
             </Link>
           </div>
 
