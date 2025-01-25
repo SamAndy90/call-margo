@@ -131,6 +131,11 @@ interface CompetitorProfile {
   updated_at?: Date;
 }
 
+interface UpdateResponse {
+  data: CompetitorProfile | null;
+  error: PostgrestError | null;
+}
+
 const tabs = [
   { name: 'Company', href: '#company' },
   { name: 'Brand', href: '#brand' },
@@ -928,9 +933,9 @@ function MarketingArchitectureContent() {
     setIsCompetitorModalOpen(true);
   };
 
-  const handleUpdateCompetitor = async (competitorId: string, updates: Partial<CompetitorProfile>) => {
+  const handleUpdateCompetitor = async (competitorId: string, updates: Partial<CompetitorProfile>): Promise<void> => {
     try {
-      const { error } = await supabase
+      const { error }: UpdateResponse = await supabase
         .from('competitors')
         .update(updates)
         .eq('id', competitorId);
@@ -1085,7 +1090,7 @@ function MarketingArchitectureContent() {
                   id="companyName"
                   placeholder="Enter your company name"
                   value={companyData.name}
-                  onChange={(value) => handleCompanyDataChange('name', value)}
+                  onChange={(newValue) => handleCompanyDataChange('name', newValue)}
                 />
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <FormField
@@ -1093,7 +1098,7 @@ function MarketingArchitectureContent() {
                     id="founded"
                     type="date"
                     value={companyData.founded}
-                    onChange={(value) => handleCompanyDataChange('founded', value)}
+                    onChange={(newValue) => handleCompanyDataChange('founded', newValue)}
                   />
                   <FormField
                     label="Website"
@@ -1101,7 +1106,7 @@ function MarketingArchitectureContent() {
                     type="url"
                     placeholder="https://example.com"
                     value={companyData.website}
-                    onChange={(value) => handleCompanyDataChange('website', value)}
+                    onChange={(newValue) => handleCompanyDataChange('website', newValue)}
                   />
                 </div>
                 <FormField
@@ -1110,7 +1115,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="Brief description of your company"
                   value={companyData.description}
-                  onChange={(value) => handleCompanyDataChange('description', value)}
+                  onChange={(newValue) => handleCompanyDataChange('description', newValue)}
                 />
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <FormField
@@ -1119,7 +1124,7 @@ function MarketingArchitectureContent() {
                     type="textarea"
                     placeholder="Your company's mission"
                     value={companyData.mission}
-                    onChange={(value) => handleCompanyDataChange('mission', value)}
+                    onChange={(newValue) => handleCompanyDataChange('mission', newValue)}
                   />
                   <FormField
                     label="Vision"
@@ -1127,7 +1132,7 @@ function MarketingArchitectureContent() {
                     type="textarea"
                     placeholder="Your company's vision"
                     value={companyData.vision}
-                    onChange={(value) => handleCompanyDataChange('vision', value)}
+                    onChange={(newValue) => handleCompanyDataChange('vision', newValue)}
                   />
                 </div>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -1137,7 +1142,7 @@ function MarketingArchitectureContent() {
                     type="textarea"
                     placeholder="List your company's strengths"
                     value={companyData.strengths}
-                    onChange={(value) => handleCompanyDataChange('strengths', value)}
+                    onChange={(newValue) => handleCompanyDataChange('strengths', newValue)}
                   />
                   <FormField
                     label="Weaknesses"
@@ -1145,7 +1150,7 @@ function MarketingArchitectureContent() {
                     type="textarea"
                     placeholder="List areas for improvement"
                     value={companyData.weaknesses}
-                    onChange={(value) => handleCompanyDataChange('weaknesses', value)}
+                    onChange={(newValue) => handleCompanyDataChange('weaknesses', newValue)}
                   />
                 </div>
                 <FormField
@@ -1154,7 +1159,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="What makes your company unique?"
                   value={companyData.differentiators}
-                  onChange={(value) => handleCompanyDataChange('differentiators', value)}
+                  onChange={(newValue) => handleCompanyDataChange('differentiators', newValue)}
                 />
 
                 {/* Team Members Section */}
@@ -1223,14 +1228,14 @@ function MarketingArchitectureContent() {
                 id="brandName"
                 placeholder="Enter your brand name"
                 value={brandData.brand_name}
-                onChange={(value) => handleBrandDataChange('brand_name', value)}
+                onChange={(newValue) => handleBrandDataChange('brand_name', newValue)}
               />
               <FormField
                 label="Tagline"
                 id="tagline"
                 placeholder="Your brand's tagline or slogan"
                 value={brandData.tagline}
-                onChange={(value) => handleBrandDataChange('tagline', value)}
+                onChange={(newValue) => handleBrandDataChange('tagline', newValue)}
               />
               <FormField
                 label="Brand Values"
@@ -1238,7 +1243,7 @@ function MarketingArchitectureContent() {
                 type="textarea"
                 placeholder="List your brand's core values"
                 value={brandData.values}
-                onChange={(value) => handleBrandDataChange('values', value)}
+                onChange={(newValue) => handleBrandDataChange('values', newValue)}
               />
               <FormField
                 label="Voice and Tone"
@@ -1246,7 +1251,7 @@ function MarketingArchitectureContent() {
                 type="textarea"
                 placeholder="Describe your brand's voice and tone"
                 value={brandData.voice_tone}
-                onChange={(value) => handleBrandDataChange('voice_tone', value)}
+                onChange={(newValue) => handleBrandDataChange('voice_tone', newValue)}
               />
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
@@ -1255,7 +1260,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="Describe your visual identity guidelines"
                   value={brandData.visual_identity}
-                  onChange={(value) => handleBrandDataChange('visual_identity', value)}
+                  onChange={(newValue) => handleBrandDataChange('visual_identity', newValue)}
                 />
                 <FormField
                   label="Color Palette"
@@ -1263,7 +1268,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="List your brand colors and their usage"
                   value={brandData.color_palette}
-                  onChange={(value) => handleBrandDataChange('color_palette', value)}
+                  onChange={(newValue) => handleBrandDataChange('color_palette', newValue)}
                 />
               </div>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -1273,7 +1278,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="Describe your brand's typography"
                   value={brandData.typography}
-                  onChange={(value) => handleBrandDataChange('typography', value)}
+                  onChange={(newValue) => handleBrandDataChange('typography', newValue)}
                 />
                 <FormField
                   label="Logo Usage"
@@ -1281,7 +1286,7 @@ function MarketingArchitectureContent() {
                   type="textarea"
                   placeholder="Guidelines for logo usage"
                   value={brandData.logo_usage}
-                  onChange={(value) => handleBrandDataChange('logo_usage', value)}
+                  onChange={(newValue) => handleBrandDataChange('logo_usage', newValue)}
                 />
               </div>
             </Tab.Panel>
@@ -1510,33 +1515,33 @@ function MarketingArchitectureContent() {
                           label="Product Name"
                           id="name"
                           value={profile.name}
-                          onChange={(value) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => {/* TODO: Add update functionality */}}
                         />
                         <FormField
                           label="Type"
                           id="type"
                           value={profile.type}
-                          onChange={(value) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => {/* TODO: Add update functionality */}}
                         />
                         <FormField
                           label="Purpose/Benefit"
                           id="purpose_benefit"
                           type="textarea"
                           value={profile.purpose_benefit}
-                          onChange={(value) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => {/* TODO: Add update functionality */}}
                         />
                         <FormField
                           label="Description"
                           id="description"
                           type="textarea"
                           value={profile.description}
-                          onChange={(value) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => {/* TODO: Add update functionality */}}
                         />
                         <FormField
                           label="Market Category"
                           id="market_category"
                           value={profile.market_category}
-                          onChange={(value) => {/* TODO: Add update functionality */}}
+                          onChange={(newValue) => {/* TODO: Add update functionality */}}
                         />
                       </div>
                     );
@@ -1642,21 +1647,21 @@ function MarketingArchitectureContent() {
                       label="Industry"
                       id="industry"
                       value={''}
-                      onChange={(value) => {}}
+                      onChange={(newValue) => {}}
                     />
                     <FormField
                       label="Overview of Key Players"
                       id="key_players"
                       type="textarea"
                       value={''}
-                      onChange={(value) => {}}
+                      onChange={(newValue) => {}}
                     />
                     <FormField
                       label="Company Advantages"
                       id="advantages"
                       type="textarea"
                       value={''}
-                      onChange={(value) => {}}
+                      onChange={(newValue) => {}}
                     />
                   </div>
                 </div>
