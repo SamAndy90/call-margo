@@ -4,14 +4,24 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import {
+  HomeIcon,
+  RocketLaunchIcon,
+  ChartBarIcon,
+  UsersIcon,
+  DocumentTextIcon,
+  Cog6ToothIcon,
+  XMarkIcon,
+  Bars3Icon
+} from '@heroicons/react/24/outline';
 
 const navigation = [
-  { name: 'Overview', href: '/dashboard', icon: '📊' },
-  { name: 'Campaigns', href: '/dashboard/campaigns', icon: '🎯' },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
-  { name: 'Audience', href: '/dashboard/audience', icon: '👥' },
-  { name: 'Content', href: '/dashboard/content', icon: '📝' },
-  { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
+  { name: 'Overview', href: '/dashboard', icon: HomeIcon },
+  { name: 'Campaigns', href: '/dashboard/campaigns', icon: RocketLaunchIcon },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
+  { name: 'Audience', href: '/dashboard/audience', icon: UsersIcon },
+  { name: 'Content', href: '/dashboard/content', icon: DocumentTextIcon },
+  { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];
 
 export default function DashboardLayout({
@@ -71,21 +81,27 @@ export default function DashboardLayout({
               />
             </div>
           </div>
-          <div className="flex flex-1 flex-col overflow-y-auto">
-            <nav className="flex-1 space-y-1 px-4 py-4">
+          <div className="flex flex-1 flex-col overflow-y-auto pt-5">
+            <nav className="flex-1 space-y-1 px-3">
               {navigation.map((item) => {
                 const isActive = pathname === item.href;
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-md ${
+                    className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                       isActive
                         ? 'bg-coral-50 text-coral-700'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-coral-600'
                     }`}
                   >
-                    <span className="mr-3">{item.icon}</span>
+                    <Icon 
+                      className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${
+                        isActive ? 'text-coral-600' : 'text-gray-400 group-hover:text-coral-500'
+                      }`}
+                      aria-hidden="true"
+                    />
                     {item.name}
                   </Link>
                 );
@@ -94,8 +110,8 @@ export default function DashboardLayout({
             <div className="flex flex-shrink-0 p-4 border-t">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-coral-100 flex items-center justify-center">
-                    <span className="text-coral-600 text-sm">👤</span>
+                  <div className="h-8 w-8 rounded-lg bg-coral-50 flex items-center justify-center">
+                    <UsersIcon className="h-5 w-5 text-coral-600" />
                   </div>
                 </div>
                 <div className="ml-3">
@@ -116,8 +132,8 @@ export default function DashboardLayout({
       >
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
-          <div className="flex h-16 flex-shrink-0 items-center justify-center px-4 border-b">
-            <div className="relative w-full h-8 px-2">
+          <div className="flex h-16 flex-shrink-0 items-center justify-between px-4 border-b">
+            <div className="relative w-32 h-8">
               <Image 
                 src="/images/margo-logo.svg"
                 alt="Margo"
@@ -127,23 +143,36 @@ export default function DashboardLayout({
                 sizes="(max-width: 768px) 100vw, 200px"
               />
             </div>
+            <button
+              type="button"
+              className="text-gray-400 hover:text-gray-500"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
           </div>
-          <div className="flex flex-1 flex-col overflow-y-auto">
-            <nav className="flex-1 space-y-1 px-4 py-4">
+          <div className="flex flex-1 flex-col overflow-y-auto pt-5">
+            <nav className="flex-1 space-y-1 px-3">
               {navigation.map((item) => {
                 const isActive = pathname === item.href;
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-md ${
+                    className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                       isActive
                         ? 'bg-coral-50 text-coral-700'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-coral-600'
                     }`}
                     onClick={() => setSidebarOpen(false)}
                   >
-                    <span className="mr-3">{item.icon}</span>
+                    <Icon 
+                      className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${
+                        isActive ? 'text-coral-600' : 'text-gray-400 group-hover:text-coral-500'
+                      }`}
+                      aria-hidden="true"
+                    />
                     {item.name}
                   </Link>
                 );
@@ -157,11 +186,11 @@ export default function DashboardLayout({
       <div className="sticky top-0 z-30 flex h-16 flex-shrink-0 bg-white md:hidden">
         <button
           type="button"
-          className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-coral-500"
+          className="px-4 text-gray-500 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-coral-500"
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
           <span className="sr-only">Open sidebar</span>
-          {sidebarOpen ? '✕' : '☰'}
+          <Bars3Icon className="h-6 w-6" />
         </button>
       </div>
 
