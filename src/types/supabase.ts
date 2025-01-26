@@ -9,6 +9,65 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      audience_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          problems: Json | null
+          product_solutions: Json | null
+          attraction_channels: string[] | null
+          engagement_channels: string[] | null
+          most_valuable_segments: string[] | null
+          common_objections: Json | null
+          common_channels: string[] | null
+          trusted_platforms: string[] | null
+          complementary_problems: string[] | null
+          voice_of_customer: Json | null
+          notes: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          problems?: Json | null
+          product_solutions?: Json | null
+          attraction_channels?: string[] | null
+          engagement_channels?: string[] | null
+          most_valuable_segments?: string[] | null
+          common_objections?: Json | null
+          common_channels?: string[] | null
+          trusted_platforms?: string[] | null
+          complementary_problems?: string[] | null
+          voice_of_customer?: Json | null
+          notes?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          problems?: Json | null
+          product_solutions?: Json | null
+          attraction_channels?: string[] | null
+          engagement_channels?: string[] | null
+          most_valuable_segments?: string[] | null
+          common_objections?: Json | null
+          common_channels?: string[] | null
+          trusted_platforms?: string[] | null
+          complementary_problems?: string[] | null
+          voice_of_customer?: Json | null
+          notes?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       growth_plans: {
         Row: {
           id: string
