@@ -6,23 +6,23 @@ import {
   Bars3Icon,
   XMarkIcon,
   HomeIcon,
-  RocketLaunchIcon,
-  UsersIcon,
+  MegaphoneIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  ChatBubbleLeftRightIcon,
+  BuildingOfficeIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { name: 'Growth Plans', href: '/growth-plan', icon: RocketLaunchIcon },
-  { name: 'Audience', href: '/audience', icon: UsersIcon },
-  { name: 'Content', href: '/content', icon: DocumentTextIcon },
+  { name: 'Overview', href: '/dashboard', icon: HomeIcon },
+  { name: 'Campaigns', href: '/campaigns', icon: MegaphoneIcon },
   { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'Feedback', href: '/feedback', icon: ChatBubbleLeftRightIcon },
+  { name: 'Marketing Architecture', href: '/marketing-architecture', icon: BuildingOfficeIcon },
+  { name: 'Content', href: '/content', icon: DocumentTextIcon },
+  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
 export default function Sidebar({ children }: { children: React.ReactNode }) {

@@ -2,7 +2,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import DashboardSidebar from '@/components/navigation/DashboardSidebar';
+import Sidebar from '@/components/navigation/Sidebar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,7 +25,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full bg-white">
       <body className={`${inter.className} h-full antialiased`}>
-        <DashboardSidebar>{children}</DashboardSidebar>
+        <Sidebar>{children}</Sidebar>
       </body>
     </html>
   );
