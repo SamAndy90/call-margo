@@ -11,10 +11,12 @@ import {
   ChartBarIcon,
   BuildingOfficeIcon,
   Cog6ToothIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: HomeIcon },
@@ -28,6 +30,13 @@ const navigation = [
 export default function Sidebar({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/signin');
+  };
 
   return (
     <>
@@ -113,6 +122,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                             ))}
                           </ul>
                         </li>
+                        <li className="-mx-2">
+                          <button
+                            onClick={handleSignOut}
+                            className="flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                          >
+                            <UserCircleIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
+                            Sign out
+                          </button>
+                        </li>
                       </ul>
                     </nav>
                   </div>
@@ -160,6 +178,15 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                     ))}
                   </ul>
                 </li>
+                <li className="-mx-2">
+                  <button
+                    onClick={handleSignOut}
+                    className="flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                  >
+                    <UserCircleIcon className="h-6 w-6 text-gray-400" aria-hidden="true" />
+                    Sign out
+                  </button>
+                </li>
               </ul>
             </nav>
           </div>
@@ -190,11 +217,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
                     id="user-menu-button"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <span className="hidden lg:flex lg:items-center">
-                      <span className="text-sm font-semibold leading-6 text-gray-900" aria-hidden="true">
-                        User
-                      </span>
-                    </span>
+                    <UserCircleIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
                   </button>
                 </div>
               </div>
