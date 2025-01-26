@@ -6,11 +6,9 @@ import {
   Bars3Icon,
   XMarkIcon,
   HomeIcon,
-  RocketLaunchIcon,
-  UserGroupIcon,
+  MegaphoneIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  ChatBubbleLeftRightIcon,
   BuildingOfficeIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
@@ -18,13 +16,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { name: 'Marketing Architecture', href: '/marketing-architecture', icon: BuildingOfficeIcon },
-  { name: 'Growth Plans', href: '/growth-plan', icon: RocketLaunchIcon },
-  { name: 'Audience', href: '/audience-profiles', icon: UserGroupIcon },
-  { name: 'Content', href: '/content', icon: DocumentTextIcon },
+  { name: 'Overview', href: '/dashboard', icon: HomeIcon },
+  { name: 'Campaigns', href: '/campaigns', icon: MegaphoneIcon },
   { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'Feedback', href: '/feedback', icon: ChatBubbleLeftRightIcon },
+  { name: 'Marketing Architecture', href: '/marketing-architecture', icon: BuildingOfficeIcon },
+  { name: 'Content', href: '/content', icon: DocumentTextIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
