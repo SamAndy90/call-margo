@@ -112,54 +112,54 @@ export interface Database {
       campaigns: {
         Row: {
           id: string
-          growth_plan_id: string | null
-          user_id: string
+          created_at: string
+          updated_at: string
           name: string
           description: string | null
-          objective: string
-          target_audience_ids: string[]
-          channels: Json[]
-          budget: number | null
           start_date: string | null
           end_date: string | null
           status: string
-          metrics: Json[]
-          created_at: string
-          updated_at: string
+          stage: string
+          tactic_id: string | null
+          custom_tactic: string | null
+          growth_plan_id: string
+          user_id: string
+          frequency: string | null
+          distribution_channels: string[] | null
         }
         Insert: {
           id?: string
-          growth_plan_id?: string | null
-          user_id: string
+          created_at?: string
+          updated_at?: string
           name: string
           description?: string | null
-          objective: string
-          target_audience_ids?: string[]
-          channels?: Json[]
-          budget?: number | null
           start_date?: string | null
           end_date?: string | null
           status?: string
-          metrics?: Json[]
-          created_at?: string
-          updated_at?: string
+          stage: string
+          tactic_id?: string | null
+          custom_tactic?: string | null
+          growth_plan_id: string
+          user_id: string
+          frequency?: string | null
+          distribution_channels?: string[] | null
         }
         Update: {
           id?: string
-          growth_plan_id?: string | null
-          user_id?: string
+          created_at?: string
+          updated_at?: string
           name?: string
           description?: string | null
-          objective?: string
-          target_audience_ids?: string[]
-          channels?: Json[]
-          budget?: number | null
           start_date?: string | null
           end_date?: string | null
           status?: string
-          metrics?: Json[]
-          created_at?: string
-          updated_at?: string
+          stage?: string
+          tactic_id?: string | null
+          custom_tactic?: string | null
+          growth_plan_id?: string
+          user_id?: string
+          frequency?: string | null
+          distribution_channels?: string[] | null
         }
       }
       projects: {
@@ -272,6 +272,50 @@ export interface Database {
           campaign_id?: string
           user_id?: string
           content?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      tactics: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          stage: string
+          audience_types: string[] | null
+          product_types: string[] | null
+          channels: string[] | null
+          budget_range: string | null
+          keywords: string[] | null
+          example: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          stage: string
+          audience_types?: string[] | null
+          product_types?: string[] | null
+          channels?: string[] | null
+          budget_range?: string | null
+          keywords?: string[] | null
+          example?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          stage?: string
+          audience_types?: string[] | null
+          product_types?: string[] | null
+          channels?: string[] | null
+          budget_range?: string | null
+          keywords?: string[] | null
+          example?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -1,8 +1,10 @@
+'use client';
+
 import { Fragment, useState, useEffect } from 'react';
-import { Dialog, Transition, Listbox } from '@headlessui/react';
-import { XMarkIcon, CheckIcon, ChevronUpDownIcon } from '@heroicons/react/24/outline';
+import { Dialog, Transition } from '@headlessui/react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Database } from '@/types/supabase';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import TacticSelector from './TacticSelector';
 
 type Campaign = Database['public']['Tables']['campaigns']['Row'];
 
@@ -10,94 +12,158 @@ interface CreateCampaignModalProps {
   open: boolean;
   onClose: () => void;
   onCreate: (campaign: Partial<Campaign>) => void;
+  defaultStage?: string | null;
 }
 
 const stages = [
-  { id: 'foundations', name: 'Foundations', description: 'Build your marketing foundation' },
-  { id: 'reach', name: 'Reach', description: 'Build brand awareness' },
-  { id: 'engage', name: 'Engage', description: 'Create active engagement' },
-  { id: 'convert', name: 'Convert', description: 'Turn prospects into customers' },
-  { id: 'delight', name: 'Delight', description: 'Create loyal advocates' },
+  { name: 'Foundations', description: 'Build your marketing foundation' },
+  { name: 'Reach', description: 'Build brand awareness' },
+  { name: 'Engage', description: 'Create active engagement' },
+  { name: 'Convert', description: 'Turn prospects into customers' },
+  { name: 'Delight', description: 'Create loyal advocates' },
 ];
 
-const goals = {
-  foundations: ['Launch a new product', 'Launch a new company/brand', 'Decrease acquisition cost', 'Recruit talent'],
-  reach: ['Build brand awareness'],
-  engage: ['Create an active sales pipeline', 'Increase leads', 'Increase email newsletter subscribers'],
-  convert: ['Close active deals', 'Shorten sales cycle', 'Increase new prospect conversion'],
-  delight: ['Decrease churn', 'Expand existing customer wallet share', 'Increase product adoption'],
-};
+const frequencies = [
+  { name: 'Annually', value: 'annually', duration: 365 },
+  { name: 'Quarterly', value: 'quarterly', duration: 90 },
+  { name: 'Monthly', value: 'monthly', duration: 30 },
+  { name: '2x/Month', value: '2x-month', duration: 15 },
+  { name: 'Weekly', value: 'weekly', duration: 7 },
+  { name: 'Every Other Week', value: 'biweekly', duration: 14 },
+  { name: 'Daily', value: 'daily', duration: 1 },
+  { name: 'Custom', value: 'custom', duration: null },
+];
+
+const distributionChannels = [
+  'Website',
+  'Blog',
+  'Email',
+  'LinkedIn',
+  'Twitter',
+  'Instagram',
+  'Facebook',
+  'YouTube',
+  'TikTok',
+  'Podcast',
+  'Press Release',
+  'Direct Mail',
+  'Print',
+  'Radio',
+  'TV',
+  'Other',
+];
 
 export default function CreateCampaignModal({
   open,
   onClose,
   onCreate,
+  defaultStage,
 }: CreateCampaignModalProps) {
+  // Get tomorrow's date
+  const getTomorrow = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
+  // Get date 90 days from tomorrow
+  const getNinetyDaysFromTomorrow = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const ninetyDays = new Date(tomorrow);
+    ninetyDays.setDate(tomorrow.getDate() + 90);
+    return ninetyDays.toISOString().split('T')[0];
+  };
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [objective, setObjective] = useState('');
-  const [selectedStage, setSelectedStage] = useState(stages[0]);
-  const [selectedGoal, setSelectedGoal] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(
-    new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  );
-  const [channels, setChannels] = useState<string[]>([]);
-  const [budget, setBudget] = useState<string>('');
-  const [audiences, setAudiences] = useState<any[]>([]);
-  const [selectedAudiences, setSelectedAudiences] = useState<string[]>([]);
-  const supabase = createClientComponentClient<Database>();
+  const [stage, setStage] = useState(defaultStage || '');
+  const [selectedTactic, setSelectedTactic] = useState<any>(null);
+  const [customTactic, setCustomTactic] = useState('');
+  const [startDate, setStartDate] = useState(getTomorrow());
+  const [endDate, setEndDate] = useState(getNinetyDaysFromTomorrow());
+  const [frequency, setFrequency] = useState('quarterly');
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [error, setError] = useState('');
 
+  // Update stage when defaultStage changes
   useEffect(() => {
-    fetchAudiences();
-  }, []);
-
-  const fetchAudiences = async () => {
-    try {
-      // Replace with your actual audience table/query
-      const { data, error } = await supabase
-        .from('audience_profiles')
-        .select('*');
-
-      if (error) throw error;
-      setAudiences(data || []);
-    } catch (error) {
-      console.error('Error fetching audiences:', error);
+    if (defaultStage) {
+      setStage(defaultStage);
     }
+  }, [defaultStage]);
+
+  // Reset dates when modal opens
+  useEffect(() => {
+    if (open) {
+      setStartDate(getTomorrow());
+      setEndDate(getNinetyDaysFromTomorrow());
+    }
+  }, [open]);
+
+  const handleFrequencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFrequency(e.target.value);
+  };
+
+  const handleTacticSelect = (tactic: any) => {
+    setSelectedTactic(tactic);
+    setCustomTactic('');
+  };
+
+  const handleCreateNewTactic = (name: string) => {
+    setSelectedTactic(null);
+    setCustomTactic(name);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newCampaign: Partial<Campaign> = {
+    setError('');
+
+    console.log('Form submission values:', {
       name,
       description,
-      objective,
-      stage: selectedStage.name,
-      status: 'draft',
+      stage,
+      selectedTactic,
+      customTactic,
+      startDate,
+      endDate,
+      frequency,
+      selectedChannels
+    });
+
+    if (!name || !stage || !(selectedTactic || customTactic) || !startDate || !endDate || !frequency) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    const campaignData = {
+      name,
+      description: description || null,
+      stage,
+      tactic_id: selectedTactic?.id || null,
+      custom_tactic: customTactic || null,
       start_date: startDate,
       end_date: endDate,
-      channels: channels.map(channel => ({ name: channel })),
-      budget: budget ? parseFloat(budget) : null,
-      target_audience_ids: selectedAudiences,
-      metrics: [],
+      status: 'draft',
+      frequency,
+      distribution_channels: selectedChannels.length > 0 ? selectedChannels : null,
     };
 
-    onCreate(newCampaign);
-    resetForm();
-  };
+    console.log('Submitting campaign data:', campaignData);
 
-  const resetForm = () => {
+    onCreate(campaignData);
+
+    // Reset form
     setName('');
     setDescription('');
-    setObjective('');
-    setSelectedStage(stages[0]);
-    setSelectedGoal('');
-    setStartDate(new Date().toISOString().split('T')[0]);
-    setEndDate(new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-    setChannels([]);
-    setBudget('');
-    setSelectedAudiences([]);
+    setStage(defaultStage || '');
+    setSelectedTactic(null);
+    setCustomTactic('');
+    setStartDate(getTomorrow());
+    setEndDate(getNinetyDaysFromTomorrow());
+    setFrequency('quarterly');
+    setSelectedChannels([]);
+    setError('');
   };
 
   return (
@@ -126,11 +192,11 @@ export default function CreateCampaignModal({
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6">
+              <Dialog.Panel className="relative transform rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:p-6">
                 <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2"
                     onClick={onClose}
                   >
                     <span className="sr-only">Close</span>
@@ -139,11 +205,18 @@ export default function CreateCampaignModal({
                 </div>
 
                 <div className="sm:flex sm:items-start">
-                  <div className="mt-3 w-full text-center sm:mt-0 sm:text-left">
+                  <div className="w-full">
                     <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                      Create Campaign
+                      Create New Campaign
                     </Dialog.Title>
+
                     <form onSubmit={handleSubmit} className="mt-6">
+                      {error && (
+                        <div className="rounded-md bg-red-50 p-4 mb-4">
+                          <div className="text-sm text-red-700">{error}</div>
+                        </div>
+                      )}
+
                       <div className="space-y-6">
                         <div>
                           <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -151,11 +224,12 @@ export default function CreateCampaignModal({
                           </label>
                           <input
                             type="text"
+                            name="name"
                             id="name"
+                            required
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            required
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral sm:text-sm"
                           />
                         </div>
 
@@ -165,101 +239,127 @@ export default function CreateCampaignModal({
                           </label>
                           <textarea
                             id="description"
+                            name="description"
+                            rows={2}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            rows={3}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral sm:text-sm"
                           />
                         </div>
 
-                        <div>
-                          <Listbox value={selectedStage} onChange={setSelectedStage}>
-                            <Listbox.Label className="block text-sm font-medium text-gray-700">
-                              Growth Stage
-                            </Listbox.Label>
-                            <div className="relative mt-1">
-                              <Listbox.Button className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
-                                <span className="block truncate">{selectedStage.name}</span>
-                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                  <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                                </span>
-                              </Listbox.Button>
+                        <div className="grid grid-cols-2 gap-6">
+                          <div>
+                            <label htmlFor="stage" className="block text-sm font-medium text-gray-700">
+                              Stage
+                            </label>
+                            <select
+                              id="stage"
+                              name="stage"
+                              required
+                              value={stage}
+                              onChange={(e) => setStage(e.target.value)}
+                              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral sm:text-sm"
+                            >
+                              <option value="">Select a stage</option>
+                              {stages.map((s) => (
+                                <option key={s.name} value={s.name}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
 
-                              <Transition
-                                leave="transition ease-in duration-100"
-                                leaveFrom="opacity-100"
-                                leaveTo="opacity-0"
-                              >
-                                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                  {stages.map((stage) => (
-                                    <Listbox.Option
-                                      key={stage.id}
-                                      className={({ active }) =>
-                                        `relative cursor-default select-none py-2 pl-3 pr-9 ${
-                                          active ? 'bg-blue-600 text-white' : 'text-gray-900'
-                                        }`
-                                      }
-                                      value={stage}
-                                    >
-                                      {({ selected, active }) => (
-                                        <>
-                                          <span className="block truncate font-semibold">
-                                            {stage.name}
-                                          </span>
-                                          <span className="block truncate text-sm text-gray-500">
-                                            {stage.description}
-                                          </span>
-                                          {selected ? (
-                                            <span
-                                              className={`absolute inset-y-0 right-0 flex items-center pr-4 ${
-                                                active ? 'text-white' : 'text-blue-600'
-                                              }`}
-                                            >
-                                              <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                                            </span>
-                                          ) : null}
-                                        </>
-                                      )}
-                                    </Listbox.Option>
-                                  ))}
-                                </Listbox.Options>
-                              </Transition>
-                            </div>
-                          </Listbox>
+                          <div>
+                            <label htmlFor="frequency" className="block text-sm font-medium text-gray-700">
+                              Frequency
+                            </label>
+                            <select
+                              id="frequency"
+                              name="frequency"
+                              required
+                              value={frequency}
+                              onChange={handleFrequencyChange}
+                              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral sm:text-sm"
+                            >
+                              <option value="">Select frequency</option>
+                              {frequencies.map((f) => (
+                                <option key={f.value} value={f.value}>
+                                  {f.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
 
                         <div>
-                          <label htmlFor="goal" className="block text-sm font-medium text-gray-700">
-                            Campaign Goal
+                          <label className="block text-sm font-medium text-gray-700">
+                            Primary Tactic
                           </label>
-                          <select
-                            id="goal"
-                            value={selectedGoal}
-                            onChange={(e) => setSelectedGoal(e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            required
-                          >
-                            <option value="">Select a goal</option>
-                            {goals[selectedStage.id as keyof typeof goals].map((goal) => (
-                              <option key={goal} value={goal}>
-                                {goal}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="mt-2">
+                            <TacticSelector
+                              stage={stage}
+                              onSelect={handleTacticSelect}
+                              onCreateNew={handleCreateNewTactic}
+                            />
+                            {selectedTactic && (
+                              <div className="mt-2 rounded-md bg-coral/10 p-3">
+                                <h4 className="font-medium text-coral">{selectedTactic.name}</h4>
+                                <p className="mt-1 text-sm text-gray-600">{selectedTactic.description}</p>
+                                {selectedTactic.example && (
+                                  <p className="mt-2 text-sm text-gray-600">
+                                    <span className="font-medium">Example:</span> {selectedTactic.example}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {customTactic && (
+                              <div className="mt-2 rounded-md bg-gray-50 p-3">
+                                <p className="text-sm text-gray-600">
+                                  Custom tactic: <span className="font-medium">{customTactic}</span>
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Distribution Channels
+                          </label>
+                          <div className="mt-2 grid grid-cols-3 gap-2">
+                            {distributionChannels.map((channel) => (
+                              <label key={channel} className="inline-flex items-center">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-gray-300 text-coral focus:ring-coral"
+                                  checked={selectedChannels.includes(channel)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedChannels([...selectedChannels, channel]);
+                                    } else {
+                                      setSelectedChannels(selectedChannels.filter((c) => c !== channel));
+                                    }
+                                  }}
+                                />
+                                <span className="ml-2 text-sm text-gray-700">{channel}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
                           <div>
                             <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
                               Start Date
                             </label>
                             <input
                               type="date"
+                              name="startDate"
                               id="startDate"
+                              required
                               value={startDate}
                               onChange={(e) => setStartDate(e.target.value)}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                              required
+                              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral sm:text-sm"
                             />
                           </div>
 
@@ -269,69 +369,28 @@ export default function CreateCampaignModal({
                             </label>
                             <input
                               type="date"
+                              name="endDate"
                               id="endDate"
+                              required
                               value={endDate}
                               onChange={(e) => setEndDate(e.target.value)}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                              required
+                              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral sm:text-sm"
                             />
                           </div>
-                        </div>
-
-                        <div>
-                          <label htmlFor="budget" className="block text-sm font-medium text-gray-700">
-                            Budget
-                          </label>
-                          <div className="relative mt-1 rounded-md shadow-sm">
-                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                              <span className="text-gray-500 sm:text-sm">$</span>
-                            </div>
-                            <input
-                              type="number"
-                              id="budget"
-                              value={budget}
-                              onChange={(e) => setBudget(e.target.value)}
-                              className="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                              placeholder="0.00"
-                              step="0.01"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label htmlFor="audiences" className="block text-sm font-medium text-gray-700">
-                            Target Audiences
-                          </label>
-                          <select
-                            id="audiences"
-                            multiple
-                            value={selectedAudiences}
-                            onChange={(e) => {
-                              const values = Array.from(e.target.selectedOptions, option => option.value);
-                              setSelectedAudiences(values);
-                            }}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                          >
-                            {audiences.map((audience) => (
-                              <option key={audience.id} value={audience.id}>
-                                {audience.name}
-                              </option>
-                            ))}
-                          </select>
                         </div>
                       </div>
 
-                      <div className="mt-6 flex justify-end space-x-3">
+                      <div className="mt-6 flex justify-end gap-x-3">
                         <button
                           type="button"
                           onClick={onClose}
-                          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          className="rounded-md bg-coral px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-coral/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
                         >
                           Create Campaign
                         </button>

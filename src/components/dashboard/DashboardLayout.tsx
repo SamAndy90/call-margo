@@ -24,6 +24,7 @@ const navigation = [
   { name: 'Campaigns', href: '/dashboard/campaigns', icon: RocketLaunchIcon },
   { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
   { name: 'Marketing Architecture', href: '/dashboard/architecture', icon: BuildingLibraryIcon },
+  { name: 'Growth Plan', href: '/growth-plan', icon: DocumentTextIcon },
   { name: 'Content', href: '/dashboard/content', icon: DocumentTextIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];

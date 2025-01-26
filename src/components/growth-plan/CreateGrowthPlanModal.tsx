@@ -16,10 +16,20 @@ export default function CreateGrowthPlanModal({
   onClose,
   onCreate,
 }: CreateGrowthPlanModalProps) {
+  // Set default dates for 90-day period starting tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const ninetyDaysFromTomorrow = new Date(tomorrow);
+  ninetyDaysFromTomorrow.setDate(tomorrow.getDate() + 90);
+
+  const formatDate = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(formatDate(tomorrow));
+  const [endDate, setEndDate] = useState(formatDate(ninetyDaysFromTomorrow));
   const [goals, setGoals] = useState<{ name: string }[]>([{ name: '' }]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -42,8 +52,8 @@ export default function CreateGrowthPlanModal({
   const resetForm = () => {
     setName('');
     setDescription('');
-    setStartDate('');
-    setEndDate('');
+    setStartDate(formatDate(tomorrow));
+    setEndDate(formatDate(ninetyDaysFromTomorrow));
     setGoals([{ name: '' }]);
   };
 
@@ -94,7 +104,7 @@ export default function CreateGrowthPlanModal({
                 <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#d06e63] focus:ring-offset-2"
                     onClick={onClose}
                   >
                     <span className="sr-only">Close</span>
@@ -107,110 +117,120 @@ export default function CreateGrowthPlanModal({
                     <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
                       Create Growth Plan
                     </Dialog.Title>
-                    <form onSubmit={handleSubmit} className="mt-6">
-                      <div className="space-y-6">
-                        <div>
-                          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                            Name
-                          </label>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                          Name
+                        </label>
+                        <div className="mt-1">
                           <input
                             type="text"
+                            name="name"
                             id="name"
+                            required
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            required
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#d06e63] focus:ring-[#d06e63] sm:text-sm"
                           />
-                        </div>
-
-                        <div>
-                          <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                            Description
-                          </label>
-                          <textarea
-                            id="description"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            rows={3}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
-                              Start Date
-                            </label>
-                            <input
-                              type="date"
-                              id="startDate"
-                              value={startDate}
-                              onChange={(e) => setStartDate(e.target.value)}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            />
-                          </div>
-
-                          <div>
-                            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
-                              End Date
-                            </label>
-                            <input
-                              type="date"
-                              id="endDate"
-                              value={endDate}
-                              onChange={(e) => setEndDate(e.target.value)}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Goals</label>
-                          <div className="mt-2 space-y-3">
-                            {goals.map((goal, index) => (
-                              <div key={index} className="flex items-center space-x-2">
-                                <input
-                                  type="text"
-                                  value={goal.name}
-                                  onChange={(e) => updateGoal(index, e.target.value)}
-                                  placeholder="Enter a goal"
-                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                />
-                                {goals.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeGoal(index)}
-                                    className="text-gray-400 hover:text-gray-500"
-                                  >
-                                    <XMarkIcon className="h-5 w-5" />
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={addGoal}
-                            className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-500"
-                          >
-                            Add another goal
-                          </button>
                         </div>
                       </div>
 
-                      <div className="mt-6 flex justify-end space-x-3">
+                      <div>
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                          Description
+                        </label>
+                        <div className="mt-1">
+                          <textarea
+                            id="description"
+                            name="description"
+                            rows={3}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#d06e63] focus:ring-[#d06e63] sm:text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                            Start Date
+                          </label>
+                          <div className="mt-1">
+                            <input
+                              type="date"
+                              name="startDate"
+                              id="startDate"
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#d06e63] focus:ring-[#d06e63] sm:text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                            End Date
+                          </label>
+                          <div className="mt-1">
+                            <input
+                              type="date"
+                              name="endDate"
+                              id="endDate"
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#d06e63] focus:ring-[#d06e63] sm:text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Goals</label>
+                        <div className="mt-2 space-y-2">
+                          {goals.map((goal, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={goal.name}
+                                onChange={(e) => updateGoal(index, e.target.value)}
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#d06e63] focus:ring-[#d06e63] sm:text-sm"
+                                placeholder="Enter a goal"
+                              />
+                              {goals.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeGoal(index)}
+                                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#d06e63] focus:ring-offset-2"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                         <button
                           type="button"
-                          onClick={onClose}
-                          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          onClick={addGoal}
+                          className="mt-2 inline-flex items-center text-sm font-medium text-[#d06e63] hover:text-[#b85c52]"
                         >
-                          Cancel
+                          + Add Goal
                         </button>
+                      </div>
+
+                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
                         <button
                           type="submit"
-                          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          className="inline-flex w-full justify-center rounded-md bg-[#d06e63] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#b85c52] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d06e63] sm:col-start-2"
                         >
-                          Create Plan
+                          Create
+                        </button>
+                        <button
+                          type="button"
+                          className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                          onClick={onClose}
+                        >
+                          Cancel
                         </button>
                       </div>
                     </form>
