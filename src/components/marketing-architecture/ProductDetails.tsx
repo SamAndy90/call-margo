@@ -4,31 +4,12 @@ import React, { useState } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import FormField from '@/components/forms/FormField';
 import ListField from '@/components/forms/ListField';
-
-interface PricePoint {
-  id: string;
-  name: string;
-  price: string;
-  features: string[];
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  value_proposition: string;
-  target_market: string[];
-  problems_solved: string[];
-  key_features: string[];
-  benefits: string[];
-  price_points: PricePoint[];
-  audience_ids: string[];
-}
+import { Product, PricePoint } from '@/types/product';
 
 interface Props {
   product: Product;
-  onProductChange: (field: keyof Product, value: any) => void;
-  onAddNote: (data: any) => void;
+  onProductChange: (field: keyof Product, value: Product[keyof Product]) => void;
+  onAddNote: (data: { title: string; content: string }) => void;
 }
 
 const defaultAudiences = [
@@ -96,7 +77,7 @@ export default function ProductDetails({
               id="product-name"
               label="Product Name"
               value={product.name}
-              onChange={(value) => onProductChange('name', value)}
+              onChange={(value: string) => onProductChange('name', value)}
             />
           </div>
 
@@ -105,7 +86,7 @@ export default function ProductDetails({
               id="description"
               label="Description"
               value={product.description}
-              onChange={(value) => onProductChange('description', value)}
+              onChange={(value: string) => onProductChange('description', value)}
               type="textarea"
             />
           </div>
@@ -115,7 +96,7 @@ export default function ProductDetails({
               id="value-proposition"
               label="Value Proposition"
               value={product.value_proposition}
-              onChange={(value) => onProductChange('value_proposition', value)}
+              onChange={(value: string) => onProductChange('value_proposition', value)}
               type="textarea"
             />
           </div>
@@ -146,8 +127,8 @@ export default function ProductDetails({
           <div className="sm:col-span-6">
             <ListField
               label="Target Market"
-              items={product.target_market}
-              onChange={(items) => onProductChange('target_market', items)}
+              values={product.target_market}
+              onChange={(values: string[]) => onProductChange('target_market', values)}
               placeholder="Add target market segment..."
             />
           </div>
@@ -155,8 +136,8 @@ export default function ProductDetails({
           <div className="sm:col-span-6">
             <ListField
               label="Problems Solved"
-              items={product.problems_solved}
-              onChange={(items) => onProductChange('problems_solved', items)}
+              values={product.problems_solved}
+              onChange={(values: string[]) => onProductChange('problems_solved', values)}
               placeholder="Add a problem..."
             />
           </div>
@@ -164,8 +145,8 @@ export default function ProductDetails({
           <div className="sm:col-span-6">
             <ListField
               label="Key Features"
-              items={product.key_features}
-              onChange={(items) => onProductChange('key_features', items)}
+              values={product.key_features}
+              onChange={(values: string[]) => onProductChange('key_features', values)}
               placeholder="Add a feature..."
             />
           </div>
@@ -173,8 +154,8 @@ export default function ProductDetails({
           <div className="sm:col-span-6">
             <ListField
               label="Benefits"
-              items={product.benefits}
-              onChange={(items) => onProductChange('benefits', items)}
+              values={product.benefits}
+              onChange={(values: string[]) => onProductChange('benefits', values)}
               placeholder="Add a benefit..."
             />
           </div>
@@ -188,10 +169,13 @@ export default function ProductDetails({
           <button
             type="button"
             onClick={() => {
-              const newPricePoints = [
-                ...product.price_points,
-                { id: '', name: '', price: '', features: [] },
-              ];
+              const newPricePoint: PricePoint = {
+                id: crypto.randomUUID(),
+                name: '',
+                price: '',
+                features: []
+              };
+              const newPricePoints = [...product.price_points, newPricePoint];
               onProductChange('price_points', newPricePoints);
             }}
             className="inline-flex items-center rounded-md border border-transparent bg-[#D06E63] px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-[#BB635A] focus:outline-none focus:ring-2 focus:ring-[#D06E63] focus:ring-offset-2"
@@ -209,7 +193,7 @@ export default function ProductDetails({
                     id={`price-point-name-${index}`}
                     label="Tier Name"
                     value={pricePoint.name}
-                    onChange={(value) => {
+                    onChange={(value: string) => {
                       const newPricePoints = [...product.price_points];
                       newPricePoints[index] = { ...pricePoint, name: value };
                       onProductChange('price_points', newPricePoints);
@@ -222,7 +206,7 @@ export default function ProductDetails({
                     id={`price-point-price-${index}`}
                     label="Price"
                     value={pricePoint.price}
-                    onChange={(value) => {
+                    onChange={(value: string) => {
                       const newPricePoints = [...product.price_points];
                       newPricePoints[index] = { ...pricePoint, price: value };
                       onProductChange('price_points', newPricePoints);
@@ -233,10 +217,10 @@ export default function ProductDetails({
                 <div className="sm:col-span-6">
                   <ListField
                     label="Features"
-                    items={pricePoint.features}
-                    onChange={(items) => {
+                    values={pricePoint.features}
+                    onChange={(values: string[]) => {
                       const newPricePoints = [...product.price_points];
-                      newPricePoints[index] = { ...pricePoint, features: items };
+                      newPricePoints[index] = { ...pricePoint, features: values };
                       onProductChange('price_points', newPricePoints);
                     }}
                     placeholder="Add a feature..."
@@ -286,13 +270,13 @@ export default function ProductDetails({
                 id="note-title"
                 label="Title"
                 value={newNote.title}
-                onChange={(value) => setNewNote({ ...newNote, title: value })}
+                onChange={(value: string) => setNewNote({ ...newNote, title: value })}
               />
               <FormField
                 id="note-content"
                 label="Content"
                 value={newNote.content}
-                onChange={(value) => setNewNote({ ...newNote, content: value })}
+                onChange={(value: string) => setNewNote({ ...newNote, content: value })}
                 type="textarea"
               />
               <div className="flex justify-end space-x-3">

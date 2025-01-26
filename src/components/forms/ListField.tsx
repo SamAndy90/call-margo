@@ -3,15 +3,17 @@ import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface ListFieldProps {
   label: string;
-  items?: string[] | null;
-  onChange: (items: string[]) => void;
+  values?: string[] | null;
+  id?: string;
+  onChange: (values: string[]) => void;
+  placeholder?: string;
 }
 
-export default function ListField({ label, items = [], onChange }: ListFieldProps) {
+export default function ListField({ label, values = [], id, onChange, placeholder }: ListFieldProps) {
   const [newItem, setNewItem] = useState('');
   
-  // Ensure items is always an array
-  const listItems = Array.isArray(items) ? items : [];
+  // Ensure values is always an array
+  const listItems = Array.isArray(values) ? values : [];
 
   const handleAddItem = () => {
     if (newItem.trim()) {
@@ -35,7 +37,7 @@ export default function ListField({ label, items = [], onChange }: ListFieldProp
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
       
@@ -44,11 +46,13 @@ export default function ListField({ label, items = [], onChange }: ListFieldProp
         <div className="flex gap-2">
           <input
             type="text"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral-500 focus:ring-coral-500 sm:text-sm"
+            id={id}
+            name={id}
             value={newItem}
             onChange={(e) => setNewItem(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={`Add ${label.toLowerCase()}`}
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral-500 focus:ring-coral-500 sm:text-sm"
+            placeholder={placeholder || `Add ${label.toLowerCase()}`}
           />
           <button
             type="button"

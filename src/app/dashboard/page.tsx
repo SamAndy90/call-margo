@@ -1,214 +1,207 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClientComponentClient, User } from '@supabase/auth-helpers-nextjs';
-import { 
-  RocketLaunchIcon, 
-  ChartBarIcon, 
-  PencilIcon,
-  UserGroupIcon,
-  BuildingOfficeIcon,
-  MegaphoneIcon,
-  DocumentTextIcon,
-  ChatBubbleLeftRightIcon,
-  ArrowTrendingUpIcon
-} from '@heroicons/react/24/outline';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Database } from '@/types/supabase';
 import Link from 'next/link';
+import { ArrowRightIcon } from '@heroicons/react/20/solid';
 
-const dashboardTiles = [
-  { 
-    name: 'Marketing Architecture', 
-    icon: BuildingOfficeIcon, 
-    href: '/marketing-architecture',
-    description: 'Define your product, audience, and channels',
-    color: 'bg-blue-50 hover:bg-blue-100',
-    stats: 'Last updated 2 hours ago'
-  },
-  { 
-    name: 'Audience Profiles', 
-    icon: UserGroupIcon, 
-    href: '/audience-profiles',
-    description: 'Manage and analyze your target audiences',
-    color: 'bg-purple-50 hover:bg-purple-100',
-    stats: '3 active profiles'
-  },
-  { 
-    name: 'Content Creation', 
-    icon: DocumentTextIcon, 
-    href: '/content',
-    description: 'Create and manage marketing content',
-    color: 'bg-green-50 hover:bg-green-100',
-    stats: '12 pieces created'
-  },
-  { 
-    name: 'Campaigns', 
-    icon: MegaphoneIcon, 
-    href: '/campaigns',
-    description: 'Plan and execute marketing campaigns',
-    color: 'bg-yellow-50 hover:bg-yellow-100',
-    stats: '2 active campaigns'
-  },
-  { 
-    name: 'Analytics', 
-    icon: ChartBarIcon, 
-    href: '/analytics',
-    description: 'Track and analyze performance metrics',
-    color: 'bg-pink-50 hover:bg-pink-100',
-    stats: 'Updated live'
-  },
-  { 
-    name: 'Customer Feedback', 
-    icon: ChatBubbleLeftRightIcon, 
-    href: '/feedback',
-    description: 'Collect and analyze customer feedback',
-    color: 'bg-indigo-50 hover:bg-indigo-100',
-    stats: '24 new responses'
-  }
-];
+type GrowthPlan = Database['public']['Tables']['growth_plans']['Row'];
+type Campaign = Database['public']['Tables']['campaigns']['Row'];
 
-const recentActivities = [
-  { text: 'New campaign "Summer Sale" created', time: '2 hours ago', icon: '🎯' },
-  { text: 'Email newsletter sent to 1,234 subscribers', time: '4 hours ago', icon: '📧' },
-  { text: 'Social media post scheduled for tomorrow', time: '5 hours ago', icon: '📱' },
-  { text: 'Analytics report generated', time: 'Yesterday', icon: '📊' },
-];
+interface Stats {
+  totalGrowthPlans: number;
+  activeGrowthPlans: number;
+  totalCampaigns: number;
+  activeCampaigns: number;
+}
 
-const quickStats = [
-  { name: 'Total Audience', value: '12.5k', change: '+12%', trend: 'up' },
-  { name: 'Engagement Rate', value: '4.3%', change: '+0.8%', trend: 'up' },
-  { name: 'Content Pieces', value: '45', change: '+5', trend: 'up' },
-  { name: 'Active Campaigns', value: '3', change: '0', trend: 'neutral' },
-];
-
-const supabase = createClientComponentClient();
-
-export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null);
+export default function DashboardPage() {
+  const [growthPlans, setGrowthPlans] = useState<GrowthPlan[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    totalGrowthPlans: 0,
+    activeGrowthPlans: 0,
+    totalCampaigns: 0,
+    activeCampaigns: 0,
+  });
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const supabase = createClientComponentClient<Database>();
 
   useEffect(() => {
-    const getUser = async () => {
+    const fetchData = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setUser(user);
-        } else {
-          router.push('/signin');
-        }
-      } catch (error) {
-        console.error('Error getting user:', error);
-        router.push('/signin');
+        const [growthPlansData, campaignsData] = await Promise.all([
+          supabase.from('growth_plans').select('*').order('created_at', { ascending: false }),
+          supabase.from('campaigns').select('*').order('created_at', { ascending: false }),
+        ]);
+
+        if (growthPlansData.error) throw growthPlansData.error;
+        if (campaignsData.error) throw campaignsData.error;
+
+        setGrowthPlans(growthPlansData.data || []);
+        setCampaigns(campaignsData.data || []);
+
+        setStats({
+          totalGrowthPlans: growthPlansData.data?.length || 0,
+          activeGrowthPlans: growthPlansData.data?.filter((p) => p.status === 'active').length || 0,
+          totalCampaigns: campaignsData.data?.length || 0,
+          activeCampaigns: campaignsData.data?.filter((c) => c.status === 'active').length || 0,
+        });
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err instanceof Error ? err.message : 'Error fetching dashboard data');
       } finally {
         setLoading(false);
       }
     };
 
-    getUser();
-  }, [router]);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          router.push('/');
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [router]);
+    fetchData();
+  }, [supabase]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 w-1/4 bg-gray-200 rounded mb-4"></div>
+            <div className="h-4 w-1/2 bg-gray-200 rounded mb-8"></div>
+            <div className="space-y-4">
+              <div className="h-32 bg-gray-200 rounded"></div>
+              <div className="h-32 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
-    return null; // Router will handle redirect
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error: {error}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="py-8">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back{user?.email ? `, ${user.email.split('@')[0]}` : ''}!
-            </h1>
-            <p className="mt-2 text-lg text-gray-600">
-              Here's your marketing command center. What would you like to work on today?
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <div className="sm:flex sm:items-center">
+          <div className="sm:flex-auto">
+            <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+            <p className="mt-2 text-sm text-gray-700">
+              Welcome to your marketing dashboard. Let&apos;s grow your business together.
             </p>
           </div>
+        </div>
 
-          {/* Quick Stats */}
-          <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {quickStats.map((stat) => (
-              <div
-                key={stat.name}
-                className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6"
-              >
-                <dt className="truncate text-sm font-medium text-gray-500">{stat.name}</dt>
-                <dd className="mt-1">
-                  <div className="flex items-baseline">
-                    <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-                    <p className={`ml-2 flex items-baseline text-sm font-semibold ${
-                      stat.trend === 'up' ? 'text-green-600' : 
-                      stat.trend === 'down' ? 'text-red-600' : 
-                      'text-gray-500'
-                    }`}>
-                      {stat.change}
-                      {stat.trend === 'up' && (
-                        <ArrowTrendingUpIcon className="h-4 w-4 ml-0.5" />
-                      )}
-                    </p>
-                  </div>
-                </dd>
-              </div>
-            ))}
+        <dl className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt className="truncate text-sm font-medium text-gray-500">Growth Plans</dt>
+            <dd className="mt-1 text-3xl font-semibold text-gray-900">{stats.totalGrowthPlans}</dd>
+            <dd className="mt-1 text-sm text-gray-500">
+              {stats.activeGrowthPlans} active plans
+            </dd>
           </div>
 
-          {/* Dashboard Tiles */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {dashboardTiles.map((tile) => (
+          <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt className="truncate text-sm font-medium text-gray-500">Campaigns</dt>
+            <dd className="mt-1 text-3xl font-semibold text-gray-900">{stats.totalCampaigns}</dd>
+            <dd className="mt-1 text-sm text-gray-500">
+              {stats.activeCampaigns} active campaigns
+            </dd>
+          </div>
+        </dl>
+
+        <div className="mt-8">
+          <div className="sm:flex sm:items-center">
+            <div className="sm:flex-auto">
+              <h2 className="text-lg font-semibold text-gray-900">Recent Growth Plans</h2>
+              <p className="mt-2 text-sm text-gray-700">
+                View and manage your growth plans
+              </p>
+            </div>
+            <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
               <Link
-                key={tile.name}
-                href={tile.href}
-                className={`group relative overflow-hidden rounded-xl ${tile.color} p-6 transition duration-200 ease-in-out`}
+                href="/growth-plan"
+                className="inline-flex items-center text-sm font-medium text-coral hover:text-coral/90"
               >
-                <div className="flex items-center space-x-4">
-                  <tile.icon className="h-8 w-8 text-gray-700" />
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{tile.name}</h3>
-                    <p className="mt-1 text-sm text-gray-600">{tile.description}</p>
-                    <p className="mt-2 text-sm font-medium text-gray-500">{tile.stats}</p>
-                  </div>
-                </div>
+                View all
+                <ArrowRightIcon className="ml-1 h-5 w-5" aria-hidden="true" />
               </Link>
-            ))}
+            </div>
           </div>
-
-          {/* Recent Activity */}
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
-              <div className="divide-y divide-gray-200">
-                {recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3 py-4 first:pt-0 last:pb-0">
-                    <span className="text-2xl">{activity.icon}</span>
-                    <div>
-                      <p className="text-sm text-gray-900">{activity.text}</p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
+          <div className="mt-8 flow-root">
+            <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+              <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                <table className="min-w-full divide-y divide-gray-300">
+                  <thead>
+                    <tr>
+                      <th
+                        scope="col"
+                        className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
+                      >
+                        Name
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Status
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                      >
+                        Campaigns
+                      </th>
+                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
+                        <span className="sr-only">View</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {growthPlans.slice(0, 5).map((plan) => (
+                      <tr key={plan.id}>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
+                          {plan.name}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              plan.status === 'active'
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-gray-50 text-gray-700'
+                            }`}
+                          >
+                            {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {campaigns.filter((c) => c.growth_plan_id === plan.id).length}
+                        </td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                          <Link
+                            href={`/growth-plan/${plan.id}`}
+                            className="text-coral hover:text-coral/90"
+                          >
+                            View<span className="sr-only">, {plan.name}</span>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

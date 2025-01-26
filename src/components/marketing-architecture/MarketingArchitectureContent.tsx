@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import ProductDetails from './ProductDetails';
+import { Product, PricePoint } from '@/types/product';
 
-const initialProduct = {
+const initialProduct: Product = {
   id: '',
   name: '',
   description: '',
@@ -12,14 +13,14 @@ const initialProduct = {
   problems_solved: [],
   key_features: [],
   benefits: [],
-  price_points: [],
+  price_points: [] as PricePoint[], // Initialize as empty PricePoint array
   audience_ids: [],
 };
 
 export default function MarketingArchitectureContent() {
   const [product, setProduct] = useState(initialProduct);
 
-  const handleProductChange = (field: keyof typeof product, value: any) => {
+  const handleProductChange = (field: keyof Product, value: Product[keyof Product]) => {
     setProduct(prev => ({
       ...prev,
       [field]: value

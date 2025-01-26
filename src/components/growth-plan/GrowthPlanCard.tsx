@@ -62,23 +62,25 @@ export default function GrowthPlanCard({ plan, onUpdate }: GrowthPlanCardProps) 
           {plan.metrics && (
             <div className="flex items-center">
               <ChartBarIcon className="mr-1 h-4 w-4" />
-              <span>{(plan.metrics as any[]).length} metrics</span>
+              <span>{plan.metrics.length} metrics</span>
             </div>
           )}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {(plan.goals as any[]).slice(0, 2).map((goal, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center rounded-full bg-coral/10 px-2.5 py-1 text-xs font-medium text-coral"
-            >
-              {goal.name}
-            </span>
+          {plan.goals.slice(0, 2).map((goal, index) => (
+            goal && typeof goal === 'object' && 'name' in goal && typeof goal.name === 'string' ? (
+              <span
+                key={index}
+                className="inline-flex items-center rounded-full bg-coral/10 px-2.5 py-1 text-xs font-medium text-coral"
+              >
+                {goal.name}
+              </span>
+            ) : null
           ))}
-          {(plan.goals as any[]).length > 2 && (
+          {plan.goals.length > 2 && (
             <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
-              +{(plan.goals as any[]).length - 2} more
+              +{plan.goals.length - 2} more
             </span>
           )}
         </div>

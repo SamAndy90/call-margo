@@ -1,24 +1,27 @@
-import { Suspense } from 'react';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+'use client';
 
-export default async function ArchitectureLayout({
+import { useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
+
+export default function ArchitectureLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createServerComponentClient({
-    cookies: () => cookies()
-  });
+  const supabase = createClientComponentClient();
+  const router = useRouter();
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/signin');
+      }
+    };
 
-  return (
-    <Suspense fallback={<LoadingSpinner />}>
-      {children}
-    </Suspense>
-  );
+    checkUser();
+  }, [router, supabase.auth]);
+
+  return <>{children}</>;
 }

@@ -1,12 +1,21 @@
 import { Suspense } from 'react';
+import CampaignsClient from './client';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import CampaignCard from '@/components/growth-plan/CampaignCard';
-import CreateCampaignModal from '@/components/growth-plan/CreateCampaignModal';
+import { Database } from '@/types/supabase';
+import { redirect } from 'next/navigation';
 
-export default async function CampaignPage() {
-  const supabase = createServerComponentClient({ cookies });
+export default async function CampaignsPage() {
+  const supabase = createServerComponentClient<Database>({ cookies });
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    redirect('/signin');
+  }
 
   const { data: campaigns } = await supabase
     .from('campaigns')
@@ -14,19 +23,12 @@ export default async function CampaignPage() {
     .order('created_at', { ascending: false });
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Campaigns</h1>
-        <CreateCampaignModal />
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <Suspense fallback={<LoadingSpinner />}>
+          <CampaignsClient initialCampaigns={campaigns || []} />
+        </Suspense>
       </div>
-      
-      <Suspense fallback={<LoadingSpinner />}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campaigns?.map((campaign) => (
-            <CampaignCard key={campaign.id} campaign={campaign} />
-          ))}
-        </div>
-      </Suspense>
     </div>
   );
 }

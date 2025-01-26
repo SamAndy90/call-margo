@@ -1,45 +1,27 @@
 'use client';
 
-import { CalendarIcon, ClockIcon, ShareIcon, ChartBarIcon, UserGroupIcon, LightBulbIcon } from '@heroicons/react/24/outline';
-import { Database } from '@/types/supabase';
-import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useEffect, useState } from 'react';
+import { Database } from '@/types/supabase';
+import { CalendarIcon } from '@heroicons/react/20/solid';
+import { format } from 'date-fns';
 
 type Campaign = Database['public']['Tables']['campaigns']['Row'];
+type Tactic = Database['public']['Tables']['tactics']['Row'];
 
 interface CampaignCardProps {
   campaign: Campaign;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-const formatFrequency = (frequency: string | null) => {
-  if (!frequency) return 'Not set';
-  
-  const frequencyMap: { [key: string]: string } = {
-    'annually': 'Annual',
-    'quarterly': 'Quarterly',
-    'monthly': 'Monthly',
-    '2x-month': 'Twice Monthly',
-    'weekly': 'Weekly',
-    'biweekly': 'Every Other Week',
-    'daily': 'Daily',
-    'custom': 'Custom'
-  };
-
-  return frequencyMap[frequency] || frequency;
-};
-
-export default function CampaignCard({ campaign }: CampaignCardProps) {
-  const [tactic, setTactic] = useState<any>(null);
+export default function CampaignCard({ campaign, onEdit, onDelete }: CampaignCardProps) {
+  const [tactic, setTactic] = useState<Tactic | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClientComponentClient<Database>();
 
-  useEffect(() => {
-    if (campaign.tactic_id) {
-      fetchTactic();
-    }
-  }, [campaign.tactic_id]);
-
-  const fetchTactic = async () => {
+  const fetchTactic = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('tactics')
@@ -49,35 +31,45 @@ export default function CampaignCard({ campaign }: CampaignCardProps) {
 
       if (error) throw error;
       setTactic(data);
-    } catch (error) {
-      console.error('Error fetching tactic:', error);
+    } catch (err) {
+      console.error('Error fetching tactic:', err);
+      setError(err instanceof Error ? err.message : 'Error fetching tactic');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [supabase, campaign.tactic_id]);
 
-  const getStageColor = (stage: string) => {
-    return 'bg-coral/10 text-coral';
-  };
+  useEffect(() => {
+    if (campaign.tactic_id) {
+      fetchTactic();
+    } else {
+      setLoading(false);
+    }
+  }, [campaign.tactic_id, fetchTactic]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-teal-50 text-teal-700';
+        return 'bg-green-50 text-green-700';
       case 'draft':
         return 'bg-gray-50 text-gray-700';
       case 'completed':
-        return 'bg-coral/10 text-coral';
+        return 'bg-blue-50 text-blue-700';
       default:
         return 'bg-gray-50 text-gray-700';
     }
   };
 
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
   return (
-    <Link
-      href={`/campaign/${campaign.id}`}
-      className="relative block overflow-hidden rounded-lg bg-white border border-gray-200 shadow-sm hover:border-teal-100 hover:ring-1 hover:ring-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-    >
-      <div className="p-6">
+    <div className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="flex flex-1 flex-col p-4">
         <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-coral">
+            {campaign.custom_tactic || tactic?.name || 'No tactic selected'}
+          </p>
           <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
               campaign.status
@@ -85,44 +77,44 @@ export default function CampaignCard({ campaign }: CampaignCardProps) {
           >
             {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
           </span>
-          <p className="text-sm font-medium text-coral">
-            {campaign.custom_tactic || tactic?.name || 'No tactic selected'}
-          </p>
         </div>
-        <div className="mt-4">
-          <h3 className="truncate text-lg font-medium text-gray-900">{campaign.name}</h3>
-          <p className="mt-2 text-sm text-gray-500 line-clamp-2">{campaign.description}</p>
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-4 text-sm border-t border-gray-100 pt-4">
-          <div className="flex items-center text-gray-500">
-            <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
-            {campaign.start_date ? new Date(campaign.start_date).toLocaleDateString() : 'Not started'}
+        <h3 className="mt-2 text-sm font-medium text-gray-900">{campaign.name}</h3>
+        {campaign.description && (
+          <p className="mt-1 text-sm text-gray-500">{campaign.description}</p>
+        )}
+        {(campaign.start_date || campaign.end_date) && (
+          <div className="mt-2 flex items-center text-sm text-gray-500">
+            <CalendarIcon className="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400" />
+            <p>
+              {campaign.start_date && format(new Date(campaign.start_date), 'MMM d, yyyy')}
+              {campaign.end_date && ' - '}
+              {campaign.end_date && format(new Date(campaign.end_date), 'MMM d, yyyy')}
+            </p>
           </div>
-          <div className="flex items-center text-gray-500">
-            <ClockIcon className="mr-2 h-4 w-4 text-gray-400" />
-            <span>
-              {formatFrequency(campaign.frequency)}
-            </span>
-          </div>
-          <div className="flex items-center text-gray-500">
-            <ShareIcon className="mr-2 h-4 w-4 text-gray-400" />
-            <div className="flex flex-wrap gap-1">
-              {campaign.distribution_channels?.map((channel, index) => (
-                <span
-                  key={channel}
-                  className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800"
-                >
-                  {channel}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center text-gray-500">
-            <UserGroupIcon className="mr-2 h-4 w-4 text-gray-400" />
-            {campaign.target_audience_ids?.length || 0} Audiences
-          </div>
-        </div>
+        )}
       </div>
-    </Link>
+      {(onEdit || onDelete) && (
+        <div className="flex divide-x divide-gray-200 border-t border-gray-200 bg-gray-50">
+          {onEdit && (
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              onClick={onEdit}
+            >
+              Edit
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              className="flex flex-1 items-center justify-center py-2 text-sm font-medium text-red-600 hover:bg-gray-100 hover:text-red-700"
+              onClick={onDelete}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

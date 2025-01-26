@@ -7,12 +7,13 @@ import { Database } from '@/types/supabase';
 import TacticSelector from './TacticSelector';
 
 type Campaign = Database['public']['Tables']['campaigns']['Row'];
+type Tactic = Database['public']['Tables']['tactics']['Row'];
 
 interface CreateCampaignModalProps {
   open: boolean;
   onClose: () => void;
-  onCreate: (campaign: Partial<Campaign>) => void;
-  defaultStage?: string | null;
+  onSubmit: (campaign: Partial<Campaign>) => void;
+  defaultStage?: string;
 }
 
 const stages = [
@@ -56,7 +57,7 @@ const distributionChannels = [
 export default function CreateCampaignModal({
   open,
   onClose,
-  onCreate,
+  onSubmit,
   defaultStage,
 }: CreateCampaignModalProps) {
   // Get tomorrow's date
@@ -77,8 +78,8 @@ export default function CreateCampaignModal({
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [stage, setStage] = useState(defaultStage || '');
-  const [selectedTactic, setSelectedTactic] = useState<any>(null);
+  const [stage, setStage] = useState(defaultStage || stages[0].name);
+  const [selectedTactic, setSelectedTactic] = useState<Tactic | null>(null);
   const [customTactic, setCustomTactic] = useState('');
   const [startDate, setStartDate] = useState(getTomorrow());
   const [endDate, setEndDate] = useState(getNinetyDaysFromTomorrow());
@@ -105,9 +106,11 @@ export default function CreateCampaignModal({
     setFrequency(e.target.value);
   };
 
-  const handleTacticSelect = (tactic: any) => {
+  const handleTacticSelect = (tactic: Tactic | null) => {
     setSelectedTactic(tactic);
-    setCustomTactic('');
+    if (tactic === null) {
+      setCustomTactic('');
+    }
   };
 
   const handleCreateNewTactic = (name: string) => {
@@ -128,15 +131,22 @@ export default function CreateCampaignModal({
       startDate,
       endDate,
       frequency,
-      selectedChannels
+      selectedChannels,
     });
 
-    if (!name || !stage || !(selectedTactic || customTactic) || !startDate || !endDate || !frequency) {
+    if (
+      !name ||
+      !stage ||
+      !(selectedTactic || customTactic) ||
+      !startDate ||
+      !endDate ||
+      !frequency
+    ) {
       setError('Please fill in all required fields');
       return;
     }
 
-    const campaignData = {
+    const campaignData: Partial<Campaign> = {
       name,
       description: description || null,
       stage,
@@ -151,12 +161,12 @@ export default function CreateCampaignModal({
 
     console.log('Submitting campaign data:', campaignData);
 
-    onCreate(campaignData);
+    onSubmit(campaignData);
 
     // Reset form
     setName('');
     setDescription('');
-    setStage(defaultStage || '');
+    setStage(defaultStage || stages[0].name);
     setSelectedTactic(null);
     setCustomTactic('');
     setStartDate(getTomorrow());
