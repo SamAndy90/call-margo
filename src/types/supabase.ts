@@ -320,6 +320,32 @@ export interface Database {
           updated_at?: string
         }
       }
+      profiles: {
+        Row: {
+          id: string
+          full_name: string | null
+          company: string | null
+          role: string | null
+          updated_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          full_name?: string | null
+          company?: string | null
+          role?: string | null
+          updated_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string | null
+          company?: string | null
+          role?: string | null
+          updated_at?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
