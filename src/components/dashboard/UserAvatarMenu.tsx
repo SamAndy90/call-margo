@@ -9,10 +9,6 @@ import Link from 'next/link';
 import { useProfile } from '@/hooks/useProfile';
 import { Cog6ToothIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
-
 export default function UserAvatarMenu({ user, isCollapsed }: { user: User | null; isCollapsed: boolean }) {
   const router = useRouter();
   const supabase = createClientComponentClient();
