@@ -46,7 +46,7 @@ export function useAuth() {
 
       if (error) throw error;
 
-      toast.success('Check your email for the confirmation link');
+      toast.success('Check your email to confirm your account.');
     } catch (error) {
       if (error instanceof AuthError) {
         toast.error(error.message);

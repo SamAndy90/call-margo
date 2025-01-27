@@ -28,19 +28,29 @@ export default function SignUpPage() {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Create your account
         </h2>
+<<<<<<< HEAD
         <p className="mt-2 text-center text-sm text-gray-600">
           Or{' '}
           <Link href="/signin" className="font-medium text-coral hover:text-coral/90">
             sign in to your account
           </Link>
         </p>
+=======
+>>>>>>> ui27
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
+<<<<<<< HEAD
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+=======
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+>>>>>>> ui27
                 Email address
               </label>
               <div className="mt-1">
@@ -58,7 +68,14 @@ export default function SignUpPage() {
             </div>
 
             <div>
+<<<<<<< HEAD
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+=======
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
+>>>>>>> ui27
                 Password
               </label>
               <div className="mt-1">
@@ -75,6 +92,7 @@ export default function SignUpPage() {
               </div>
             </div>
 
+<<<<<<< HEAD
             {message && (
               <div className="rounded-md bg-blue-50 p-4">
                 <div className="flex">
@@ -100,16 +118,31 @@ export default function SignUpPage() {
               </div>
             )}
 
+=======
+>>>>>>> ui27
             <div>
               <button
                 type="submit"
                 disabled={isLoading}
+<<<<<<< HEAD
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-coral hover:bg-coral/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-coral disabled:opacity-50"
+=======
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-coral hover:bg-coral-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-coral disabled:opacity-50"
+>>>>>>> ui27
               >
                 {isLoading ? 'Creating account...' : 'Create account'}
               </button>
             </div>
           </form>
+<<<<<<< HEAD
+=======
+
+          {message && (
+            <div className="mt-6">
+              <p className="text-sm text-center text-gray-600">{message}</p>
+            </div>
+          )}
+>>>>>>> ui27
         </div>
       </div>
     </div>

@@ -10,7 +10,6 @@ import {
   ChartBarIcon,
   BuildingLibraryIcon,
   DocumentTextIcon,
-  Cog6ToothIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
 } from '@heroicons/react/24/outline';
@@ -18,13 +17,11 @@ import { useUser } from '@/hooks/useUser';
 import UserAvatarMenu from './UserAvatarMenu';
 
 const navigation = [
-  { name: 'Overview', href: '/dashboard', icon: HomeIcon },
+  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+  { name: 'Growth Plan', href: '/growth-plan', icon: ChartBarIcon },
   { name: 'Campaigns', href: '/dashboard/campaigns', icon: RocketLaunchIcon },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
-  { name: 'Marketing Architecture', href: '/dashboard/architecture', icon: BuildingLibraryIcon },
-  { name: 'Growth Plan', href: '/growth-plan', icon: DocumentTextIcon },
-  { name: 'Content', href: '/dashboard/content', icon: DocumentTextIcon },
-  { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
+  { name: 'Resources', href: '/dashboard/architecture', icon: BuildingLibraryIcon },
+  { name: 'Documentation', href: '/docs', icon: DocumentTextIcon },
 ];
 
 export default function DashboardLayout({
@@ -32,95 +29,122 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
   const { user } = useUser();
 
+  // Handle window resize
   useEffect(() => {
-    setMounted(true);
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+
+    handleResize(); // Set initial state
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  if (!mounted) {
-    return null;
-  }
-
   return (
-    <div className="flex h-full">
-      {/* Sidebar for desktop */}
-      <div className={`fixed inset-y-0 flex flex-col bg-white border-r border-gray-200 ${
-        isCollapsed ? 'w-16' : 'w-64'
-      } transition-all duration-300 ease-in-out`}>
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between h-16 px-4">
-            <div className={`flex-shrink-0 ${isCollapsed ? 'hidden' : 'block'}`}>
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 transform ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ease-in-out flex flex-col bg-white border-r border-gray-200`}
+      >
+        {/* Logo */}
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          <Link href="/dashboard" className="flex items-center space-x-2">
+            <div className="relative w-8 h-8">
               <Image
-                priority
-                className="h-8 w-auto"
-                src="/margo-square.svg"
+                src="/images/margoicon.svg"
                 alt="Margo"
-                width={48}
-                height={48}
-                style={{ width: '48px', height: '48px' }}
+                fill
+                className="object-contain"
+                priority
               />
             </div>
-            <div className={`flex-shrink-0 ${!isCollapsed ? 'hidden' : 'block'}`}>
-              <Image
-                priority
-                className="h-8 w-auto"
-                src="/margo-square.svg"
-                alt="Margo"
-                width={32}
-                height={32}
-                style={{ width: '32px', height: '32px' }}
-              />
-            </div>
+            {!isCollapsed && (
+              <span className="text-xl font-semibold text-gray-900 font-poppins">Margo OS</span>
+            )}
+          </Link>
+          <div className="flex items-center">
+            {/* Desktop collapse button */}
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1.5 rounded-md hover:bg-gray-100"
+              className="hidden md:block p-2 text-gray-500 hover:text-gray-600"
             >
               {isCollapsed ? (
-                <ChevronDoubleRightIcon className="w-5 h-5 text-gray-500" />
+                <ChevronDoubleRightIcon className="w-5 h-5" />
               ) : (
-                <ChevronDoubleLeftIcon className="w-5 h-5 text-gray-500" />
+                <ChevronDoubleLeftIcon className="w-5 h-5" />
               )}
             </button>
+            {/* Mobile close button */}
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="md:hidden p-2 text-gray-500 hover:text-gray-600"
+            >
+              <ChevronDoubleLeftIcon className="w-5 h-5" />
+            </button>
           </div>
-        
-          <div className="flex-1 px-2 pb-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center ${
-                    isCollapsed ? 'justify-center' : 'justify-start'
-                  } px-3 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'text-coral bg-coral/10'
-                      : 'text-gray-600 hover:text-coral hover:bg-gray-50'
-                  }`}
-                >
-                  <item.icon
-                    className={`${isCollapsed ? 'w-6 h-6' : 'w-5 h-5 mr-3'} flex-shrink-0`}
-                    aria-hidden="true"
-                  />
-                  {!isCollapsed && <span>{item.name}</span>}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* User profile and sign out */}
-          <UserAvatarMenu user={user} isCollapsed={isCollapsed} />
         </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-2 py-4 space-y-1">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                  isActive
+                    ? 'bg-coral/10 text-coral'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <item.icon
+                  className={`${isCollapsed ? 'w-6 h-6' : 'w-5 h-5 mr-3'} flex-shrink-0 ${
+                    isActive ? 'text-coral' : 'text-gray-400 group-hover:text-gray-500'
+                  }`}
+                  aria-hidden="true"
+                />
+                {!isCollapsed && item.name}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* User menu */}
+        <UserAvatarMenu user={user} isCollapsed={isCollapsed} />
       </div>
 
+      {/* Mobile sidebar toggle */}
+      {!isSidebarOpen && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="fixed bottom-4 left-4 z-50 p-2 bg-white rounded-full shadow-lg text-gray-500 hover:text-gray-600 md:hidden"
+        >
+          <ChevronDoubleRightIcon className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Main content */}
-      <div className={`flex-1 ${isCollapsed ? 'ml-16' : 'ml-64'} pt-5`}>
-        <main className="px-4 sm:px-6 lg:px-8">
-          {children}
+      <div
+        className={`transition-all duration-300 ${
+          isSidebarOpen ? (isCollapsed ? 'md:pl-16' : 'md:pl-64') : ''
+        }`}
+      >
+        <main className="py-6">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>
