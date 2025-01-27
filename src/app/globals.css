@@ -29,6 +29,8 @@
   --teal-700: #0f766e;
   --teal-800: #115e59;
   --teal-900: #134e4a;
+  
+  --font-poppins: 'Poppins', sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,4 +62,8 @@ body {
     outline: none;
     box-shadow: 0 0 0 2px var(--coral-500), 0 0 0 4px var(--coral-500);
   }
+}
+
+.font-poppins {
+  font-family: var(--font-poppins);
 }
