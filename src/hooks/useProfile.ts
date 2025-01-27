@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'react-hot-toast';
 import type { Database } from '@/types/supabase';
+import { PostgrestError } from '@supabase/supabase-js';
 
 export interface Profile {
   id: string;
@@ -58,7 +59,11 @@ export function useProfile(userId: string | undefined) {
           setProfile(existingProfile);
         }
       } catch (error) {
-        console.error('Error:', error);
+        if (error instanceof PostgrestError) {
+          console.error('Database error:', error.message);
+        } else {
+          console.error('Error:', error);
+        }
       } finally {
         setIsFetching(false);
       }
@@ -111,9 +116,12 @@ export function useProfile(userId: string | undefined) {
       }
       
       toast.success('Profile updated successfully');
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast.error(error.message || 'Error updating profile');
+    } catch (error) {
+      if (error instanceof PostgrestError) {
+        toast.error(error.message);
+      } else {
+        toast.error('Error updating profile');
+      }
     } finally {
       setIsLoading(false);
     }

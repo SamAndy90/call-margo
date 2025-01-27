@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import type { Database } from '@/types/supabase';
+import { AuthError } from '@supabase/supabase-js';
 
 export function useAuth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,8 +22,12 @@ export function useAuth() {
 
       router.push('/dashboard');
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message || 'Error signing in');
+    } catch (error) {
+      if (error instanceof AuthError) {
+        toast.error(error.message);
+      } else {
+        toast.error('Error signing in');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -42,8 +47,12 @@ export function useAuth() {
       if (error) throw error;
 
       toast.success('Check your email for the confirmation link');
-    } catch (error: any) {
-      toast.error(error.message || 'Error signing up');
+    } catch (error) {
+      if (error instanceof AuthError) {
+        toast.error(error.message);
+      } else {
+        toast.error('Error signing up');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -56,16 +65,30 @@ export function useAuth() {
 
       router.push('/signin');
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message || 'Error signing out');
+    } catch (error) {
+      if (error instanceof AuthError) {
+        toast.error(error.message);
+      } else {
+        toast.error('Error signing out');
+      }
     }
   };
 
-  const resetPassword = useCallback(async (email: string) => {
-    return supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    });
-  }, []);
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      });
+      if (error) throw error;
+      toast.success('Check your email for the reset link');
+    } catch (error) {
+      if (error instanceof AuthError) {
+        toast.error(error.message);
+      } else {
+        toast.error('Error resetting password');
+      }
+    }
+  };
 
   return {
     signIn,
