@@ -20,6 +20,46 @@ export default function GrowthPlanClient({ growthPlan, campaigns: initialCampaig
   const [error, setError] = useState<string | null>(null);
   const supabase = createClientComponentClient<Database>();
 
+  const updateGrowthPlanProgress = useCallback(async () => {
+    try {
+      const completedCampaigns = campaigns.filter(c => c.status === 'completed').length;
+      const totalCampaigns = campaigns.length;
+      const progress = totalCampaigns > 0 ? Math.round((completedCampaigns / totalCampaigns) * 100) : 0;
+
+      const { error: updateError } = await supabase
+        .from('growth_plans')
+        .update({ 
+          progress_percentage: progress,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', growthPlan.id);
+
+      if (updateError) throw updateError;
+    } catch (err) {
+      console.error('Error updating growth plan progress:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while updating progress');
+    }
+  }, [campaigns, growthPlan.id, supabase]);
+
+  const handleUpdateCampaign = useCallback(async (campaignId: string, data: Partial<Campaign>) => {
+    try {
+      const { data: updatedCampaign, error: updateError } = await supabase
+        .from('campaigns')
+        .update(data)
+        .eq('id', campaignId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      setCampaigns(prev => prev.map(c => c.id === campaignId ? updatedCampaign : c));
+      await updateGrowthPlanProgress();
+    } catch (err) {
+      console.error('Error updating campaign:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while updating the campaign');
+    }
+  }, [supabase, updateGrowthPlanProgress]);
+
   const handleCreateCampaign = useCallback(async (data: Partial<Campaign>) => {
     try {
       const { data: newCampaign, error: createError } = await supabase
@@ -36,12 +76,13 @@ export default function GrowthPlanClient({ growthPlan, campaigns: initialCampaig
       if (createError) throw createError;
 
       setCampaigns((prev) => [...prev, newCampaign]);
+      await updateGrowthPlanProgress();
       setIsCreateModalOpen(false);
     } catch (err) {
       console.error('Error creating campaign:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while creating the campaign');
     }
-  }, [supabase, growthPlan.id]);
+  }, [supabase, growthPlan.id, updateGrowthPlanProgress]);
 
   const handleDeleteCampaign = useCallback(async (campaignId: string) => {
     try {
@@ -52,12 +93,13 @@ export default function GrowthPlanClient({ growthPlan, campaigns: initialCampaig
 
       if (deleteError) throw deleteError;
 
-      setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+      setCampaigns((prev) => prev.filter((campaign) => campaign.id !== campaignId));
+      await updateGrowthPlanProgress();
     } catch (err) {
       console.error('Error deleting campaign:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while deleting the campaign');
     }
-  }, [supabase]);
+  }, [supabase, updateGrowthPlanProgress]);
 
   if (!growthPlan) {
     return (
@@ -114,6 +156,7 @@ export default function GrowthPlanClient({ growthPlan, campaigns: initialCampaig
               key={campaign.id}
               campaign={campaign}
               onDelete={() => handleDeleteCampaign(campaign.id)}
+              onUpdate={(data) => handleUpdateCampaign(campaign.id, data)}
             />
           ))}
         </div>

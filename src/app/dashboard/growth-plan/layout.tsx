@@ -1,8 +1,9 @@
+'use server';
+
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default async function Layout({
@@ -10,21 +11,18 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createServerComponentClient({ cookies });
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/signin');
   }
 
   return (
-    <DashboardLayout>
-      <Suspense fallback={<LoadingSpinner />}>
-        {children}
-      </Suspense>
-    </DashboardLayout>
+    <Suspense fallback={<LoadingSpinner />}>
+      {children}
+    </Suspense>
   );
 }

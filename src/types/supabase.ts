@@ -79,6 +79,8 @@ export interface Database {
           status: string
           goals: Json[]
           metrics: Json[]
+          progress_percentage: number | null
+          company: string
           created_at: string
           updated_at: string
         }
@@ -92,8 +94,8 @@ export interface Database {
           status?: string
           goals?: Json[]
           metrics?: Json[]
-          created_at?: string
-          updated_at?: string
+          progress_percentage?: number | null
+          company: string
         }
         Update: {
           id?: string
@@ -105,8 +107,8 @@ export interface Database {
           status?: string
           goals?: Json[]
           metrics?: Json[]
-          created_at?: string
-          updated_at?: string
+          progress_percentage?: number | null
+          company?: string
         }
       }
       campaigns: {

@@ -27,7 +27,7 @@ export default function GrowthPlanCard({ plan, onUpdate }: GrowthPlanCardProps) 
   return (
     <div className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition duration-200 ease-in-out hover:shadow-md hover:border-coral">
       <div className="flex items-center justify-between">
-        <Link href={`/growth-plan/${plan.id}`} className="flex-1">
+        <Link href={`/dashboard/growth-plan/${plan.id}`} className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 hover:text-coral">{plan.name}</h3>
         </Link>
         <div className="flex items-center space-x-2">
@@ -36,13 +36,13 @@ export default function GrowthPlanCard({ plan, onUpdate }: GrowthPlanCardProps) 
               plan.status
             )}`}
           >
-            {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+            {plan.status}
           </span>
           <GrowthPlanActions growthPlan={plan} onUpdate={onUpdate} />
         </div>
       </div>
       
-      <Link href={`/growth-plan/${plan.id}`} className="block">
+      <Link href={`/dashboard/growth-plan/${plan.id}`} className="block">
         <p className="mt-2 text-sm text-gray-600 line-clamp-2">
           {plan.description || 'No description provided'}
         </p>
@@ -85,6 +85,18 @@ export default function GrowthPlanCard({ plan, onUpdate }: GrowthPlanCardProps) 
           )}
         </div>
       </Link>
+      <div className="mt-4">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-sm font-medium text-gray-700">Progress</span>
+          <span className="text-sm font-medium text-gray-700">{plan.progress_percentage || 0}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-coral h-2 rounded-full transition-all duration-300"
+            style={{ width: `${plan.progress_percentage || 0}%` }}
+          ></div>
+        </div>
+      </div>
     </div>
   );
 }

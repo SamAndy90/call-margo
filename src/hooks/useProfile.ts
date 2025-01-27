@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'react-hot-toast';
 import type { Database } from '@/types/supabase';
@@ -10,7 +10,7 @@ export function useProfile(userId: string | undefined) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const supabase = createClientComponentClient<Database>();
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       if (!userId) return null;
 
@@ -20,30 +20,39 @@ export function useProfile(userId: string | undefined) {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        toast.error('Error loading profile');
+        return null;
+      }
+      
       setProfile(data);
       return data;
-    } catch (error) {
+    } catch {
       toast.error('Error loading profile');
       return null;
     }
-  };
+  }, [userId, supabase]);
 
   const updateProfile = async (updates: Partial<Profile>) => {
     try {
       setIsLoading(true);
       if (!userId) throw new Error('No user ID');
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', userId);
+        .eq('id', userId)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        toast.error('Error updating profile');
+        return;
+      }
 
+      setProfile(data);
       toast.success('Profile updated successfully');
-      await fetchProfile();
-    } catch (error) {
+    } catch {
       toast.error('Error updating profile');
     } finally {
       setIsLoading(false);
@@ -52,7 +61,7 @@ export function useProfile(userId: string | undefined) {
 
   useEffect(() => {
     fetchProfile();
-  }, [userId]);
+  }, [fetchProfile]);
 
   return {
     profile,

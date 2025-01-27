@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -8,10 +8,20 @@ export default function ProfilePage() {
   const { user } = useUser();
   const { profile, updateProfile, isLoading } = useProfile(user?.id);
   const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    company: profile?.company || '',
-    role: profile?.role || '',
+    full_name: '',
+    company: '',
+    role: '',
   });
+
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        company: profile.company || '',
+        role: profile.role || '',
+      });
+    }
+  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +54,7 @@ export default function ProfilePage() {
                 id="full_name"
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral focus:ring-coral sm:text-sm"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral focus:ring-coral sm:text-sm px-4 py-3"
               />
             </div>
           </div>
@@ -60,7 +70,7 @@ export default function ProfilePage() {
                 id="company"
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral focus:ring-coral sm:text-sm"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral focus:ring-coral sm:text-sm px-4 py-3"
               />
             </div>
           </div>
@@ -76,7 +86,7 @@ export default function ProfilePage() {
                 id="role"
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral focus:ring-coral sm:text-sm"
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-coral focus:ring-coral sm:text-sm px-4 py-3"
               />
             </div>
           </div>

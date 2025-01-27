@@ -99,8 +99,8 @@ export default function CampaignClient({ campaign, initialTasks }: CampaignClien
     <>
       <div className="mb-8">
         <Link
-          href={`/growth-plan/${campaign.growth_plan_id}`}
-          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm font-medium text-coral hover:text-coral-600"
+          href={`/dashboard/growth-plan/${campaign.growth_plan_id}`}
         >
           <ArrowLeftIcon className="mr-1 h-4 w-4" />
           Back to Growth Plan

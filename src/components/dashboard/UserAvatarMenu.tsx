@@ -8,15 +8,11 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-<<<<<<< HEAD
-import { Cog6ToothIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
-=======
 
 interface UserAvatarMenuProps {
   user: User | null;
   isCollapsed: boolean;
 }
->>>>>>> ui27
 
 export default function UserAvatarMenu({ user, isCollapsed }: UserAvatarMenuProps) {
   const { signOut } = useAuth();

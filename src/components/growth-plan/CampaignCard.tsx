@@ -13,9 +13,10 @@ interface CampaignCardProps {
   campaign: Campaign;
   onEdit?: () => void;
   onDelete?: () => void;
+  onUpdate?: (data: Partial<Campaign>) => void;
 }
 
-export default function CampaignCard({ campaign, onEdit, onDelete }: CampaignCardProps) {
+export default function CampaignCard({ campaign, onEdit, onDelete, onUpdate }: CampaignCardProps) {
   const [tactic, setTactic] = useState<Tactic | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,13 +51,21 @@ export default function CampaignCard({ campaign, onEdit, onDelete }: CampaignCar
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-50 text-green-700';
-      case 'draft':
-        return 'bg-gray-50 text-gray-700';
+        return 'bg-teal-50 text-teal-700';
       case 'completed':
-        return 'bg-blue-50 text-blue-700';
+        return 'bg-green-50 text-green-700';
+      case 'archived':
+        return 'bg-gray-100 text-gray-700';
+      case 'draft':
+        return 'bg-coral/10 text-coral';
       default:
-        return 'bg-gray-50 text-gray-700';
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    if (onUpdate) {
+      onUpdate({ status: newStatus, updated_at: new Date().toISOString() });
     }
   };
 
@@ -70,13 +79,42 @@ export default function CampaignCard({ campaign, onEdit, onDelete }: CampaignCar
           <p className="text-sm font-medium text-coral">
             {campaign.custom_tactic || tactic?.name || 'No tactic selected'}
           </p>
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
-              campaign.status
-            )}`}
-          >
-            {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
-          </span>
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center space-x-2">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
+                  campaign.status
+                )}`}
+              >
+                {campaign.status}
+              </span>
+              {campaign.status !== 'completed' && (
+                <button
+                  onClick={() => handleStatusChange('completed')}
+                  className="text-xs text-gray-600 hover:text-coral"
+                >
+                  Mark Complete
+                </button>
+              )}
+              {campaign.status === 'completed' && (
+                <button
+                  onClick={() => handleStatusChange('active')}
+                  className="text-xs text-gray-600 hover:text-coral"
+                >
+                  Reactivate
+                </button>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
+                  campaign.status
+                )}`}
+              >
+                {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+              </span>
+            </div>
+          </div>
         </div>
         <h3 className="mt-2 text-sm font-medium text-gray-900">{campaign.name}</h3>
         {campaign.description && (

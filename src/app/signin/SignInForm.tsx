@@ -1,38 +1,36 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter();
-  const supabase = createClientComponentClient();
+  const [message, setMessage] = useState('');
+  const { signIn, isLoading } = useAuth();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage('');
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Error signing in:', error);
+      await signIn(email, password);
+    } catch {
+      setMessage('Error signing in. Please try again.');
     }
   };
 
   return (
-    <form className="space-y-6" onSubmit={handleSignIn}>
+    <form className="space-y-6" onSubmit={handleSubmit}>
       <div>
-        <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-gray-700"
+        >
           Email address
         </label>
-        <div className="mt-2">
+        <div className="mt-1">
           <input
             id="email"
             name="email"
@@ -41,16 +39,19 @@ export default function SignInForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-coral focus:border-coral sm:text-sm"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-gray-700"
+        >
           Password
         </label>
-        <div className="mt-2">
+        <div className="mt-1">
           <input
             id="password"
             name="password"
@@ -59,19 +60,37 @@ export default function SignInForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-coral focus:border-coral sm:text-sm"
           />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm">
+          <Link
+            href="/auth/reset-password"
+            className="font-medium text-coral hover:text-coral-600"
+          >
+            Forgot your password?
+          </Link>
         </div>
       </div>
 
       <div>
         <button
           type="submit"
-          className="flex w-full justify-center rounded-md bg-[#D06E63] px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-[#BB635A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D06E63]"
+          disabled={isLoading}
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-coral hover:bg-coral-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-coral disabled:opacity-50"
         >
-          Sign in
+          {isLoading ? 'Signing in...' : 'Sign in'}
         </button>
       </div>
+
+      {message && (
+        <div className="mt-6">
+          <p className="text-sm text-center text-gray-600">{message}</p>
+        </div>
+      )}
     </form>
   );
 }

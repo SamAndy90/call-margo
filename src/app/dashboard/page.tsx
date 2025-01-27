@@ -133,8 +133,8 @@ export default function DashboardPage() {
             </div>
             <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
               <Link
-                href="/growth-plan"
-                className="inline-flex items-center text-sm font-medium text-coral hover:text-coral/90"
+                className="inline-flex items-center rounded-md bg-coral px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-coral-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
+                href="/dashboard/growth-plan"
               >
                 View all
                 <ArrowRightIcon className="ml-1 h-5 w-5" aria-hidden="true" />
@@ -192,8 +192,8 @@ export default function DashboardPage() {
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                           <Link
-                            href={`/growth-plan/${plan.id}`}
-                            className="text-coral hover:text-coral/90"
+                            href={`/dashboard/growth-plan/${plan.id}`}
+                            className="hover:text-coral"
                           >
                             View<span className="sr-only">, {plan.name}</span>
                           </Link>
