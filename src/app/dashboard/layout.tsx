@@ -21,13 +21,15 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100">
       <Sidebar user={user} />
-      <main className="flex-1 overflow-y-auto p-4">
-        <Suspense fallback={<LoadingSpinner />}>
-          {children}
-        </Suspense>
-      </main>
+      <div className="flex-1 pl-64">
+        <main className="p-8">
+          <Suspense fallback={<LoadingSpinner />}>
+            {children}
+          </Suspense>
+        </main>
+      </div>
     </div>
   );
 }
