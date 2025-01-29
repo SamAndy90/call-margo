@@ -118,6 +118,7 @@ export interface Database {
           updated_at: string
           name: string
           description: string | null
+          objective: string
           start_date: string | null
           end_date: string | null
           status: string
@@ -135,6 +136,7 @@ export interface Database {
           updated_at?: string
           name: string
           description?: string | null
+          objective: string
           start_date?: string | null
           end_date?: string | null
           status?: string
@@ -152,6 +154,7 @@ export interface Database {
           updated_at?: string
           name?: string
           description?: string | null
+          objective?: string
           start_date?: string | null
           end_date?: string | null
           status?: string

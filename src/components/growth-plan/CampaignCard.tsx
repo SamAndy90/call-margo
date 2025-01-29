@@ -1,158 +1,111 @@
-'use client';
-
-import { useCallback, useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Database } from '@/types/supabase';
-import { CalendarIcon } from '@heroicons/react/20/solid';
-import { format } from 'date-fns';
-
-type Campaign = Database['public']['Tables']['campaigns']['Row'];
-type Tactic = Database['public']['Tables']['tactics']['Row'];
+import { Fragment } from 'react';
+import { Campaign } from '@/types/types';
+import { Menu, Transition } from '@headlessui/react';
+import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import { formatDate } from '@/lib/utils';
+import Link from 'next/link';
+import clsx from 'clsx';
 
 interface CampaignCardProps {
   campaign: Campaign;
-  onEdit?: () => void;
-  onDelete?: () => void;
-  onUpdate?: (data: Partial<Campaign>) => void;
+  onDelete: (campaignId: string) => void;
+  onEdit: (campaign: Campaign) => void;
 }
 
-export default function CampaignCard({ campaign, onEdit, onDelete, onUpdate }: CampaignCardProps) {
-  const [tactic, setTactic] = useState<Tactic | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const supabase = createClientComponentClient<Database>();
-
-  const fetchTactic = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('tactics')
-        .select('*')
-        .eq('id', campaign.tactic_id)
-        .single();
-
-      if (error) throw error;
-      setTactic(data);
-    } catch (err) {
-      console.error('Error fetching tactic:', err);
-      setError(err instanceof Error ? err.message : 'Error fetching tactic');
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, campaign.tactic_id]);
-
-  useEffect(() => {
-    if (campaign.tactic_id) {
-      fetchTactic();
-    } else {
-      setLoading(false);
-    }
-  }, [campaign.tactic_id, fetchTactic]);
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'bg-teal-50 text-teal-700';
-      case 'completed':
-        return 'bg-green-50 text-green-700';
-      case 'archived':
-        return 'bg-gray-100 text-gray-700';
-      case 'draft':
-        return 'bg-coral/10 text-coral';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const handleStatusChange = (newStatus: string) => {
-    if (onUpdate) {
-      onUpdate({ status: newStatus, updated_at: new Date().toISOString() });
-    }
-  };
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-
+export default function CampaignCard({ campaign, onDelete, onEdit }: CampaignCardProps) {
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <div className="flex flex-1 flex-col p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-coral">
-            {campaign.custom_tactic || tactic?.name || 'No tactic selected'}
-          </p>
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center space-x-2">
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
-                  campaign.status
-                )}`}
+    <div className="bg-white shadow rounded-lg hover:shadow-md transition-shadow duration-200">
+      <Link href={`/dashboard/campaigns/${campaign.id}`} className="block">
+        <div className="p-6">
+          <div className="flex justify-between items-start">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-medium text-gray-900 truncate">
+                {campaign.name}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 truncate">
+                {campaign.description || 'No description'}
+              </p>
+            </div>
+            <Menu as="div" className="relative ml-4 flex-shrink-0">
+              <Menu.Button className="flex items-center text-gray-400 hover:text-gray-500 focus:outline-none">
+                <EllipsisVerticalIcon className="h-5 w-5" aria-hidden="true" />
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
               >
-                {campaign.status}
-              </span>
-              {campaign.status !== 'completed' && (
-                <button
-                  onClick={() => handleStatusChange('completed')}
-                  className="text-xs text-gray-600 hover:text-coral"
-                >
-                  Mark Complete
-                </button>
+                <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onEdit(campaign);
+                        }}
+                        className={clsx(
+                          active ? 'bg-gray-100' : '',
+                          'block w-full text-left px-4 py-2 text-sm text-gray-700'
+                        )}
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onDelete(campaign.id);
+                        }}
+                        className={clsx(
+                          active ? 'bg-gray-100' : '',
+                          'block w-full text-left px-4 py-2 text-sm text-red-600'
+                        )}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </Menu.Item>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-sm text-gray-500">
+              {campaign.start_date && (
+                <p>
+                  Start: {formatDate(campaign.start_date)}
+                </p>
               )}
-              {campaign.status === 'completed' && (
-                <button
-                  onClick={() => handleStatusChange('active')}
-                  className="text-xs text-gray-600 hover:text-coral"
-                >
-                  Reactivate
-                </button>
+              {campaign.end_date && (
+                <p>
+                  End: {formatDate(campaign.end_date)}
+                </p>
               )}
             </div>
-            <div className="flex items-center space-x-2">
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(
-                  campaign.status
-                )}`}
-              >
-                {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
-              </span>
+          </div>
+
+          <div className="mt-4">
+            <div className="flex flex-wrap gap-2">
+              {campaign.distribution_channels?.map((channel: string) => (
+                <span
+                  key={channel}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                >
+                  {channel}
+                </span>
+              ))}
             </div>
           </div>
         </div>
-        <h3 className="mt-2 text-sm font-medium text-gray-900">{campaign.name}</h3>
-        {campaign.description && (
-          <p className="mt-1 text-sm text-gray-500">{campaign.description}</p>
-        )}
-        {(campaign.start_date || campaign.end_date) && (
-          <div className="mt-2 flex items-center text-sm text-gray-500">
-            <CalendarIcon className="mr-1.5 h-5 w-5 flex-shrink-0 text-gray-400" />
-            <p>
-              {campaign.start_date && format(new Date(campaign.start_date), 'MMM d, yyyy')}
-              {campaign.end_date && ' - '}
-              {campaign.end_date && format(new Date(campaign.end_date), 'MMM d, yyyy')}
-            </p>
-          </div>
-        )}
-      </div>
-      {(onEdit || onDelete) && (
-        <div className="flex divide-x divide-gray-200 border-t border-gray-200 bg-gray-50">
-          {onEdit && (
-            <button
-              type="button"
-              className="flex flex-1 items-center justify-center py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              onClick={onEdit}
-            >
-              Edit
-            </button>
-          )}
-          {onDelete && (
-            <button
-              type="button"
-              className="flex flex-1 items-center justify-center py-2 text-sm font-medium text-red-600 hover:bg-gray-100 hover:text-red-700"
-              onClick={onDelete}
-            >
-              Delete
-            </button>
-          )}
-        </div>
-      )}
+      </Link>
     </div>
   );
 }
