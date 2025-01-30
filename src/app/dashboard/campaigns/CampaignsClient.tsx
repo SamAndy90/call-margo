@@ -294,23 +294,10 @@ export default function CampaignsClient() {
         onCampaignCreated={(newCampaign: Database['public']['Tables']['campaigns']['Row']) => {
           const campaignWithGrowthPlan: CampaignWithGrowthPlan = {
             ...newCampaign,
-            growth_plan: newCampaign.growth_plan_id ? {
-              id: newCampaign.growth_plan_id,
-              name: growthPlans.find(p => p.id === newCampaign.growth_plan_id)?.name || 'Unknown',
-              description: null,
-              user_id: '',
-              start_date: null,
-              end_date: null,
-              status: 'draft',
-              goals: [],
-              metrics: [],
-              progress_percentage: null,
-              company: '',
-              created_at: newCampaign.created_at,
-              updated_at: newCampaign.updated_at,
-            } : null
+            growth_plan: null
           };
-          setCampaigns((prev) => [campaignWithGrowthPlan, ...prev]);
+
+          setCampaigns(prevCampaigns => [...prevCampaigns, campaignWithGrowthPlan]);
         }}
         growthPlans={growthPlans}
       />

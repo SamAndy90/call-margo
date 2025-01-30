@@ -7,23 +7,17 @@ import Link from 'next/link';
 import { ArrowRightIcon } from '@heroicons/react/20/solid';
 
 type GrowthPlan = Database['public']['Tables']['growth_plans']['Row'];
-type Campaign = Database['public']['Tables']['campaigns']['Row'];
 
 interface Stats {
   totalGrowthPlans: number;
   activeGrowthPlans: number;
-  totalCampaigns: number;
-  activeCampaigns: number;
 }
 
 export default function DashboardPage() {
   const [growthPlans, setGrowthPlans] = useState<GrowthPlan[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalGrowthPlans: 0,
     activeGrowthPlans: 0,
-    totalCampaigns: 0,
-    activeCampaigns: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,22 +26,20 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [growthPlansData, campaignsData] = await Promise.all([
-          supabase.from('growth_plans').select('*').order('created_at', { ascending: false }),
-          supabase.from('campaigns').select('*').order('created_at', { ascending: false }),
-        ]);
+        const { data: plans } = await supabase
+          .from('growth_plans')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-        if (growthPlansData.error) throw growthPlansData.error;
-        if (campaignsData.error) throw campaignsData.error;
+        if (!plans) {
+          return;
+        }
 
-        setGrowthPlans(growthPlansData.data || []);
-        setCampaigns(campaignsData.data || []);
+        setGrowthPlans(plans);
 
         setStats({
-          totalGrowthPlans: growthPlansData.data?.length || 0,
-          activeGrowthPlans: growthPlansData.data?.filter((p) => p.status === 'active').length || 0,
-          totalCampaigns: campaignsData.data?.length || 0,
-          activeCampaigns: campaignsData.data?.filter((c) => c.status === 'active').length || 0,
+          totalGrowthPlans: plans.length,
+          activeGrowthPlans: plans.filter((p) => p.status === 'active').length,
         });
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -113,14 +105,6 @@ export default function DashboardPage() {
               {stats.activeGrowthPlans} active plans
             </dd>
           </div>
-
-          <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-            <dt className="truncate text-sm font-medium text-gray-500">Campaigns</dt>
-            <dd className="mt-1 text-3xl font-semibold text-gray-900">{stats.totalCampaigns}</dd>
-            <dd className="mt-1 text-sm text-gray-500">
-              {stats.activeCampaigns} active campaigns
-            </dd>
-          </div>
         </dl>
 
         <div className="mt-8">
@@ -159,12 +143,6 @@ export default function DashboardPage() {
                       >
                         Status
                       </th>
-                      <th
-                        scope="col"
-                        className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                      >
-                        Campaigns
-                      </th>
                       <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
                         <span className="sr-only">View</span>
                       </th>
@@ -186,9 +164,6 @@ export default function DashboardPage() {
                           >
                             {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
                           </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {campaigns.filter((c) => c.growth_plan_id === plan.id).length}
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                           <Link

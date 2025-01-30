@@ -3,9 +3,17 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Combobox, Transition } from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
-import { Database } from '@/types/supabase';
 
-type Tactic = Database['public']['Tables']['tactics']['Row'];
+interface Tactic {
+  id: string;
+  name: string;
+  description: string | null;
+  journey_stage: string;
+  frequency: string;
+  distribution_channels: string[];
+  created_at: string;
+  updated_at: string;
+}
 
 interface TacticSelectorProps {
   onSelect: (tactic: Tactic | null) => void;

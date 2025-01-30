@@ -68,6 +68,62 @@ export interface Database {
           updated_at?: string
         }
       }
+      campaigns: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          objective: string | null
+          start_date: string | null
+          end_date: string | null
+          status: string
+          stage: string
+          frequency: string
+          budget: number | null
+          target_audience: string | null
+          success_metrics: Json | null
+          distribution_channels: string[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          objective?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          status?: string
+          stage?: string
+          frequency?: string
+          budget?: number | null
+          target_audience?: string | null
+          success_metrics?: Json | null
+          distribution_channels?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          objective?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          status?: string
+          stage?: string
+          frequency?: string
+          budget?: number | null
+          target_audience?: string | null
+          success_metrics?: Json | null
+          distribution_channels?: string[] | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       growth_plans: {
         Row: {
           id: string
@@ -96,6 +152,8 @@ export interface Database {
           metrics?: Json[]
           progress_percentage?: number | null
           company: string
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -109,71 +167,18 @@ export interface Database {
           metrics?: Json[]
           progress_percentage?: number | null
           company?: string
-        }
-      }
-      campaigns: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          name: string
-          description: string | null
-          objective: string
-          start_date: string | null
-          end_date: string | null
-          status: string
-          stage: string
-          tactic_id: string | null
-          custom_tactic: string | null
-          growth_plan_id: string
-          user_id: string
-          frequency: string | null
-          distribution_channels: string[] | null
-        }
-        Insert: {
-          id?: string
           created_at?: string
           updated_at?: string
-          name: string
-          description?: string | null
-          objective: string
-          start_date?: string | null
-          end_date?: string | null
-          status?: string
-          stage: string
-          tactic_id?: string | null
-          custom_tactic?: string | null
-          growth_plan_id: string
-          user_id: string
-          frequency?: string | null
-          distribution_channels?: string[] | null
-        }
-        Update: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          name?: string
-          description?: string | null
-          objective?: string
-          start_date?: string | null
-          end_date?: string | null
-          status?: string
-          stage?: string
-          tactic_id?: string | null
-          custom_tactic?: string | null
-          growth_plan_id?: string
-          user_id?: string
-          frequency?: string | null
-          distribution_channels?: string[] | null
         }
       }
       projects: {
         Row: {
           id: string
-          campaign_id: string | null
           user_id: string
+          campaign_id: string | null
           name: string
           description: string | null
+          objective: string | null
           start_date: string | null
           end_date: string | null
           status: string
@@ -183,10 +188,11 @@ export interface Database {
         }
         Insert: {
           id?: string
-          campaign_id?: string | null
           user_id: string
+          campaign_id?: string | null
           name: string
           description?: string | null
+          objective?: string | null
           start_date?: string | null
           end_date?: string | null
           status?: string
@@ -196,10 +202,11 @@ export interface Database {
         }
         Update: {
           id?: string
-          campaign_id?: string | null
           user_id?: string
+          campaign_id?: string | null
           name?: string
           description?: string | null
+          objective?: string | null
           start_date?: string | null
           end_date?: string | null
           status?: string
@@ -255,102 +262,6 @@ export interface Database {
           updated_at?: string
         }
       }
-      campaign_notes: {
-        Row: {
-          id: string
-          campaign_id: string
-          user_id: string
-          content: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          campaign_id: string
-          user_id: string
-          content: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          campaign_id?: string
-          user_id?: string
-          content?: string
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      tactics: {
-        Row: {
-          id: string
-          name: string
-          description: string | null
-          stage: string
-          audience_types: string[] | null
-          product_types: string[] | null
-          channels: string[] | null
-          budget_range: string | null
-          keywords: string[] | null
-          example: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          stage: string
-          audience_types?: string[] | null
-          product_types?: string[] | null
-          channels?: string[] | null
-          budget_range?: string | null
-          keywords?: string[] | null
-          example?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          stage?: string
-          audience_types?: string[] | null
-          product_types?: string[] | null
-          channels?: string[] | null
-          budget_range?: string | null
-          keywords?: string[] | null
-          example?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      profiles: {
-        Row: {
-          id: string
-          full_name: string | null
-          company: string | null
-          role: string | null
-          updated_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id: string
-          full_name?: string | null
-          company?: string | null
-          role?: string | null
-          updated_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          full_name?: string | null
-          company?: string | null
-          role?: string | null
-          updated_at?: string | null
-          created_at?: string
-        }
-      }
     }
     Views: {
       [_ in never]: never
@@ -363,3 +274,5 @@ export interface Database {
     }
   }
 }
+
+export default Database;
