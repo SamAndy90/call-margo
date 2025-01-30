@@ -15,6 +15,9 @@ interface CampaignListProps {
 export default function CampaignList({ campaigns, onDelete, onEdit }: CampaignListProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  // Filter out invalid campaigns
+  const validCampaigns = campaigns?.filter(campaign => campaign && campaign.id) ?? [];
+
   return (
     <div>
       <div className="flex justify-end mb-4">
@@ -53,7 +56,7 @@ export default function CampaignList({ campaigns, onDelete, onEdit }: CampaignLi
             : 'space-y-4'
         )}
       >
-        {campaigns.map((campaign) => (
+        {validCampaigns.map((campaign) => (
           <CampaignCard
             key={campaign.id}
             campaign={campaign}

@@ -13,6 +13,12 @@ interface CampaignCardProps {
 }
 
 export default function CampaignCard({ campaign, onDelete, onEdit }: CampaignCardProps) {
+  // Add safety check for campaign
+  if (!campaign || !campaign.id) {
+    console.warn('Campaign or campaign.id is undefined');
+    return null;
+  }
+
   return (
     <div className="bg-white shadow rounded-lg hover:shadow-md transition-shadow duration-200">
       <Link href={`/dashboard/campaigns/${campaign.id}`} className="block">
