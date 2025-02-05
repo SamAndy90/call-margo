@@ -3,16 +3,17 @@
 import { Title } from "@/common";
 import { FormTextInput } from "@/common/FormInputs";
 import { FormSelectInput } from "@/common/FormInputs/FormSelectInput";
+import { Button } from "@/common/UI";
 import { getDefaults } from "@/utils/zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 
 const formSchema = z.object({
-  channel_type: z.string().default(""),
+  channel_type: z.string().min(1, "Channel type is required").default(""),
   goals_and_objectives: z.string().default(""),
   audience: z.string().default(""),
-  content_strategy: z.string().default(""),
+  content_strategy: z.string().min(1, "Strategy is required").default(""),
   messaging_considerations: z.string().default(""),
 });
 
@@ -26,6 +27,7 @@ export function ChannelForm() {
 
   function onSubmit(data: Form) {
     console.log("Form Data: ", data);
+    form.reset();
   }
 
   return (
@@ -35,7 +37,7 @@ export function ChannelForm() {
           <Title component={"h4"} size={"lg"}>
             Create new Channel
           </Title>
-          <div className={"mt-6 space-y-6"}>
+          <div className={"my-6 space-y-6"}>
             <FormSelectInput
               fieldName={"channel_type"}
               label={"Channel Type"}
@@ -71,6 +73,7 @@ export function ChannelForm() {
               </div>
             </div>
           </div>
+          <Button type={"submit"}>Create</Button>
         </div>
       </form>
     </FormProvider>

@@ -15,6 +15,10 @@ const links = [
     href: ArchitectureUrls.getChannels(),
   },
   {
+    label: "Audiences",
+    href: ArchitectureUrls.getAudiences(),
+  },
+  {
     label: "Product",
     href: ArchitectureUrls.getProduct(),
   },
@@ -40,7 +44,7 @@ export function TabsNavigation() {
         <Link
           className={cn("flex-auto text-center py-3 px-3 bg-white", {
             "hover:text-gray-900 hover:bg-gray-100": pathname !== link.href,
-            "bg-coral text-white": pathname === link.href,
+            "bg-coral-400 text-white": pathname === link.href,
           })}
           key={link.href}
           href={link.href}

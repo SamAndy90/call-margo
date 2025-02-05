@@ -55,10 +55,10 @@ export const TextInput = forwardRef<
 
       <div
         className={cn(
-          "flex flex-nowrap focus-within:border-not_darkwhite-border_focus hover:bg-not_darkwhite-bghover backdrop-blur items-center overflow-hidden rounded-md bg-not_darkblue border transition-colors",
+          "flex text-sm flex-nowrap focus-within:border-gray-600 hover:border-gray-400 focus-within:hover:border-gray-600 backdrop-blur items-center overflow-hidden rounded-md bg-not_darkblue border transition-colors",
           {
             "border-red-500": error,
-            "border-not_darkwhite-border": !error,
+            "border-gray-300": !error,
           },
           className?.inputWrapper
         )}
@@ -68,7 +68,7 @@ export const TextInput = forwardRef<
         <Component
           id={id}
           className={cn(
-            "block flex-1 px-3 py-[11px] outline-none bg-transparent placeholder:text-not_gray placeholder:text-base text-base",
+            "block flex-1 px-3 py-[11px] outline-none bg-transparent  placeholder:text-gray-300",
             className?.input
           )}
           // @ts-expect-error ref discrimination error
@@ -96,7 +96,7 @@ export const TextInput = forwardRef<
         <p
           className={cn("text-sm", {
             "text-red-500": error,
-            "text-white/10": !error,
+            "text-black/50": !error,
           })}
         >
           {helperText}

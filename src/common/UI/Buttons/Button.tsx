@@ -23,7 +23,7 @@ export function Button<T>(props: ButtonProps<T>) {
       loading={loading}
       className={{
         button: cn(
-          "cursor-pointer justify-center rounded-md text-center text-sm font-semibold transition-colors ease-linear disabled:cursor-not-allowed shadow-sm",
+          "cursor-pointer min-w-28 justify-center rounded-md text-center text-sm font-semibold transition-colors ease-linear disabled:cursor-not-allowed shadow-sm",
           {
             "disabled:opacity-50": !loading,
           },
@@ -39,7 +39,7 @@ export function Button<T>(props: ButtonProps<T>) {
           {
             "w-full": fullWidth,
             "px-3 py-2": size === "small",
-            "px-4 py-3 md:px-6 md:py-4": size === "normal",
+            "px-6 py-2.5": size === "normal",
             "px-10 py-4 text-xl md:px-12 md:py-5": size === "large",
           },
           className?.button

@@ -78,9 +78,10 @@ export function SelectInput(props: SelectInputProps) {
               <>
                 <div
                   className={cn(
-                    "flex flex-nowrap items-center px-3 py-[11px] bg-not_darkblue hover:bg-not_darkwhite-bghover backdrop-blur rounded-md border border-not_darkwhite-border transition-colors",
+                    "flex text-sm flex-nowrap items-center px-3 py-[11px] bg-white backdrop-blur rounded-md border border-gray-300 transition-colors",
                     {
-                      "border-not_darkwhite-border_focus": active,
+                      "border-gray-600": active,
+                      "hover:border-gray-400": !active,
                       "border-red-500": error,
                     },
                     button
@@ -88,7 +89,7 @@ export function SelectInput(props: SelectInputProps) {
                 >
                   <span
                     className={cn(
-                      "flex-1 text-base text-not_gray text-left whitespace-nowrap line-clamp-1"
+                      "flex-1 text-left whitespace-nowrap line-clamp-1"
                     )}
                   >
                     {displayValue}
@@ -110,7 +111,7 @@ export function SelectInput(props: SelectInputProps) {
             anchor={"bottom start"}
             transition
             className={
-              "w-[var(--button-width)] [--anchor-gap:4px] z-[1000] !max-h-56 rounded-md border border-gray-300 bg-white focus:outline-none text-base text-gray-700 origin-top transition duration-300 ease-out data-[closed]:scale-95 data-[open]:scale-100 data-[closed]:opacity-0 divide-y-[1px] divide-gray-300"
+              "w-[var(--button-width)] [--anchor-gap:4px] z-[1000] !max-h-56 rounded-md border border-gray-300 bg-white focus:outline-none text-gray-700 origin-top transition duration-300 ease-out data-[closed]:scale-95 data-[open]:scale-100 data-[closed]:opacity-0 divide-y-[1px] divide-gray-300"
             }
           >
             {options.map((i) => (
@@ -122,7 +123,7 @@ export function SelectInput(props: SelectInputProps) {
                 {({ focus, selected }) => (
                   <div
                     className={cn(
-                      "flex gap-x-2 items-center justify-between px-3 py-[11px] select-none cursor-pointer text-nowrap",
+                      "flex gap-x-2 text-sm items-center justify-between px-3 py-[11px] select-none cursor-pointer text-nowrap",
                       {
                         "bg-coral-50": focus,
                         "bg-coral-400 text-white": selected,
@@ -130,9 +131,7 @@ export function SelectInput(props: SelectInputProps) {
                     )}
                   >
                     <span className={"truncate"}>{i.label}</span>
-                    {selected && (
-                      <FiCheck className={"size-5 shrink-0 text-main-400"} />
-                    )}
+                    {selected && <FiCheck className={"size-5 shrink-0"} />}
                   </div>
                 )}
               </ListboxOption>
