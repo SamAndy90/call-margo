@@ -5,8 +5,8 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Database } from "@/types/supabase";
 import { useRouter } from "next/navigation";
 import AudienceProfileDetails from "@/components/marketing-architecture/AudienceProfileDetails";
-import { ArchitectureSkeleton } from "@/components/Dashboard/Architecture/ArchitectureSkeleton";
 import { ErrorMessage } from "@/common";
+import { ArchitectureSkeleton } from "@/components/Dashboard/Architecture/ArchitectureSkeleton";
 
 type AudienceProfile = Database["public"]["Tables"]["audience_profiles"]["Row"];
 
