@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
-import FormField from "@/components/Forms/FormField";
+import { FormField } from "@/components/Forms/FormField";
 import ListField from "@/components/Forms/ListField";
 import { Product, PricePoint } from "@/types/product";
 

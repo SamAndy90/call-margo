@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+"use client";
+
+import React, { useState } from "react";
+import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 interface ListFieldProps {
   label: string;
@@ -9,16 +11,22 @@ interface ListFieldProps {
   placeholder?: string;
 }
 
-export default function ListField({ label, values = [], id, onChange, placeholder }: ListFieldProps) {
-  const [newItem, setNewItem] = useState('');
-  
+export default function ListField({
+  label,
+  values = [],
+  id,
+  onChange,
+  placeholder,
+}: ListFieldProps) {
+  const [newItem, setNewItem] = useState("");
+
   // Ensure values is always an array
   const listItems = Array.isArray(values) ? values : [];
 
   const handleAddItem = () => {
     if (newItem.trim()) {
       onChange([...listItems, newItem.trim()]);
-      setNewItem('');
+      setNewItem("");
     }
   };
 
@@ -29,7 +37,7 @@ export default function ListField({ label, values = [], id, onChange, placeholde
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAddItem();
     }
@@ -37,10 +45,13 @@ export default function ListField({ label, values = [], id, onChange, placeholde
 
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
+      <label
+        htmlFor={id}
+        className="block text-sm font-medium text-gray-700 mb-2"
+      >
         {label}
       </label>
-      
+
       <div className="space-y-2">
         {/* Input field with add button */}
         <div className="flex gap-2">

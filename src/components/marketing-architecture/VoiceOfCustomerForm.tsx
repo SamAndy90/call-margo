@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import FormField from "@/components/Forms/FormField";
+import { FormField } from "@/components/Forms/FormField";
 
 interface VoiceOfCustomerData {
   title: string;

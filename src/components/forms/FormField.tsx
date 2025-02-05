@@ -1,24 +1,26 @@
-import React from 'react';
+"use client";
+
+import React from "react";
 
 interface Props {
   label: string;
   id: string;
   value?: string | null;
   onChange: (value: string) => void;
-  type?: 'text' | 'textarea';
+  type?: "text" | "textarea";
   placeholder?: string;
 }
 
-export default function FormField({
+export function FormField({
   label,
   id,
-  value = '',
+  value = "",
   onChange,
-  type = 'text',
+  type = "text",
   placeholder,
 }: Props) {
   // Always ensure we have a string value
-  const inputValue = value === null ? '' : value;
+  const inputValue = value === null ? "" : value;
 
   return (
     <div>
@@ -26,7 +28,7 @@ export default function FormField({
         {label}
       </label>
       <div className="mt-1">
-        {type === 'textarea' ? (
+        {type === "textarea" ? (
           <textarea
             id={id}
             name={id}
