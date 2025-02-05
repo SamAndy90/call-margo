@@ -5,8 +5,6 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Database } from "@/types/supabase";
 import { useRouter } from "next/navigation";
 import AudienceProfileDetails from "@/components/marketing-architecture/AudienceProfileDetails";
-import { ArchitectureSkeleton } from "@/components/Dashboard/Architecture/ArchitectureSkeleton";
-import { ErrorMessage } from "@/common";
 
 type AudienceProfile = Database["public"]["Tables"]["audience_profiles"]["Row"];
 
@@ -53,12 +51,43 @@ export default function ArchitecturePage() {
     fetchData();
   }, [fetchData]);
 
-  if (isLoading) return <ArchitectureSkeleton />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 w-1/4 bg-gray-200 rounded mb-4"></div>
+            <div className="h-4 w-1/2 bg-gray-200 rounded mb-8"></div>
+            <div className="space-y-4">
+              <div className="h-32 bg-gray-200 rounded"></div>
+              <div className="h-32 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  if (error) return <ErrorMessage message={error} />;
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Error: {error}
+                </h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-semibold text-gray-900 mb-8">
           Marketing Architecture

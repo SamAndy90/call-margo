@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Database } from '@/types/supabase';
-import Link from 'next/link';
-import { ArrowRightIcon } from '@heroicons/react/20/solid';
+import { useEffect, useState } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Database } from "@/types/supabase";
+import Link from "next/link";
+import { ArrowRightIcon } from "@heroicons/react/20/solid";
+import { Skeleton } from "@/common";
 
-type GrowthPlan = Database['public']['Tables']['growth_plans']['Row'];
+type GrowthPlan = Database["public"]["Tables"]["growth_plans"]["Row"];
 
 interface Stats {
   totalGrowthPlans: number;
@@ -27,9 +28,9 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         const { data: plans } = await supabase
-          .from('growth_plans')
-          .select('*')
-          .order('created_at', { ascending: false });
+          .from("growth_plans")
+          .select("*")
+          .order("created_at", { ascending: false });
 
         if (!plans) {
           return;
@@ -39,11 +40,13 @@ export default function DashboardPage() {
 
         setStats({
           totalGrowthPlans: plans.length,
-          activeGrowthPlans: plans.filter((p) => p.status === 'active').length,
+          activeGrowthPlans: plans.filter((p) => p.status === "active").length,
         });
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError(err instanceof Error ? err.message : 'Error fetching dashboard data');
+        console.error("Error fetching dashboard data:", err);
+        setError(
+          err instanceof Error ? err.message : "Error fetching dashboard data"
+        );
       } finally {
         setLoading(false);
       }
@@ -52,22 +55,7 @@ export default function DashboardPage() {
     fetchData();
   }, [supabase]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 w-1/4 bg-gray-200 rounded mb-4"></div>
-            <div className="h-4 w-1/2 bg-gray-200 rounded mb-8"></div>
-            <div className="space-y-4">
-              <div className="h-32 bg-gray-200 rounded"></div>
-              <div className="h-32 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Skeleton />;
 
   if (error) {
     return (
@@ -76,7 +64,9 @@ export default function DashboardPage() {
           <div className="rounded-md bg-red-50 p-4">
             <div className="flex">
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error: {error}</h3>
+                <h3 className="text-sm font-medium text-red-800">
+                  Error: {error}
+                </h3>
               </div>
             </div>
           </div>
@@ -92,15 +82,20 @@ export default function DashboardPage() {
           <div className="sm:flex-auto">
             <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
             <p className="mt-2 text-sm text-gray-700">
-              Welcome to your marketing dashboard. Let&apos;s grow your business together.
+              Welcome to your marketing dashboard. Let&apos;s grow your business
+              together.
             </p>
           </div>
         </div>
 
         <dl className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <div className="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-            <dt className="truncate text-sm font-medium text-gray-500">Growth Plans</dt>
-            <dd className="mt-1 text-3xl font-semibold text-gray-900">{stats.totalGrowthPlans}</dd>
+            <dt className="truncate text-sm font-medium text-gray-500">
+              Growth Plans
+            </dt>
+            <dd className="mt-1 text-3xl font-semibold text-gray-900">
+              {stats.totalGrowthPlans}
+            </dd>
             <dd className="mt-1 text-sm text-gray-500">
               {stats.activeGrowthPlans} active plans
             </dd>
@@ -110,14 +105,16 @@ export default function DashboardPage() {
         <div className="mt-8">
           <div className="sm:flex sm:items-center">
             <div className="sm:flex-auto">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Growth Plans</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Recent Growth Plans
+              </h2>
               <p className="mt-2 text-sm text-gray-700">
                 View and manage your growth plans
               </p>
             </div>
             <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
               <Link
-                className="inline-flex items-center rounded-md bg-coral px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-coral-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
+                className="inline-flex items-center rounded-md bg-coral-400 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-coral-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
                 href="/dashboard/growth-plan"
               >
                 View all
@@ -143,7 +140,10 @@ export default function DashboardPage() {
                       >
                         Status
                       </th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
+                      <th
+                        scope="col"
+                        className="relative py-3.5 pl-3 pr-4 sm:pr-0"
+                      >
                         <span className="sr-only">View</span>
                       </th>
                     </tr>
@@ -157,18 +157,19 @@ export default function DashboardPage() {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           <span
                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              plan.status === 'active'
-                                ? 'bg-green-50 text-green-700'
-                                : 'bg-gray-50 text-gray-700'
+                              plan.status === "active"
+                                ? "bg-green-50 text-green-700"
+                                : "bg-gray-50 text-gray-700"
                             }`}
                           >
-                            {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+                            {plan.status.charAt(0).toUpperCase() +
+                              plan.status.slice(1)}
                           </span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                           <Link
                             href={`/dashboard/growth-plan/${plan.id}`}
-                            className="hover:text-coral"
+                            className="hover:text-coral-400"
                           >
                             View<span className="sr-only">, {plan.name}</span>
                           </Link>

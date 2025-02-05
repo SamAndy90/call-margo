@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ResetPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
   const { resetPassword, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage('');
+    setMessage("");
 
     try {
       await resetPassword(email);
-      setMessage('Check your email for the reset link.');
+      setMessage("Check your email for the reset link.");
     } catch {
-      setMessage('Error resetting password. Please try again.');
+      setMessage("Error resetting password. Please try again.");
     }
   };
 
@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-coral focus:border-coral sm:text-sm"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-coral-600 focus:border-coral-600 sm:text-sm"
                 />
               </div>
             </div>
@@ -56,9 +56,9 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-coral hover:bg-coral-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-coral disabled:opacity-50"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-coral-400 hover:bg-coral-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-coral-600 disabled:opacity-50"
               >
-                {isLoading ? 'Sending...' : 'Send reset link'}
+                {isLoading ? "Sending..." : "Send reset link"}
               </button>
             </div>
           </form>

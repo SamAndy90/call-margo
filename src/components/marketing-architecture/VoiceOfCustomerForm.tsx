@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import FormField from '@/components/forms/FormField';
+import React, { useState } from "react";
+import FormField from "@/components/Forms/FormField";
 
 interface VoiceOfCustomerData {
   title: string;
@@ -15,10 +15,10 @@ interface Props {
 
 export default function VoiceOfCustomerForm({ onSubmit, onCancel }: Props) {
   const [formData, setFormData] = useState<VoiceOfCustomerData>({
-    title: '',
-    quote: '',
-    customer_name: '',
-    customer_title: '',
+    title: "",
+    quote: "",
+    customer_name: "",
+    customer_title: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -27,37 +27,40 @@ export default function VoiceOfCustomerForm({ onSubmit, onCancel }: Props) {
   };
 
   const handleChange = (field: keyof VoiceOfCustomerData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200"
+    >
       <FormField
         label="Title"
         id="voc-title"
         value={formData.title}
-        onChange={(value) => handleChange('title', value)}
+        onChange={(value) => handleChange("title", value)}
       />
       <FormField
         label="Quote"
         id="voc-quote"
         type="textarea"
         value={formData.quote}
-        onChange={(value) => handleChange('quote', value)}
+        onChange={(value) => handleChange("quote", value)}
       />
       <FormField
         label="Customer Name"
         id="voc-customer-name"
         value={formData.customer_name}
-        onChange={(value) => handleChange('customer_name', value)}
+        onChange={(value) => handleChange("customer_name", value)}
       />
       <FormField
         label="Customer Title"
         id="voc-customer-title"
         value={formData.customer_title}
-        onChange={(value) => handleChange('customer_title', value)}
+        onChange={(value) => handleChange("customer_title", value)}
       />
-      
+
       <div className="flex justify-end space-x-3 pt-4">
         <button
           type="button"

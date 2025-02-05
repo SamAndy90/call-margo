@@ -3,9 +3,6 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #1f2937;
-  
   /* Coral Colors */
   --coral-50: #fff1f0;
   --coral-100: #ffe4e1;
@@ -17,7 +14,7 @@
   --coral-700: #c51505;
   --coral-800: #a31509;
   --coral-900: #86160f;
-  
+
   /* Teal Colors */
   --teal-50: #f0fdfa;
   --teal-100: #ccfbf1;
@@ -29,21 +26,6 @@
   --teal-700: #0f766e;
   --teal-800: #115e59;
   --teal-900: #134e4a;
-  
-  --font-poppins: 'Poppins', sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* Default button styles */
@@ -62,8 +44,4 @@ body {
     outline: none;
     box-shadow: 0 0 0 2px var(--coral-500), 0 0 0 4px var(--coral-500);
   }
-}
-
-.font-poppins {
-  font-family: var(--font-poppins);
 }

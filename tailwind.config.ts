@@ -1,13 +1,13 @@
 import type { Config } from "tailwindcss";
+import { fontFamily } from "tailwindcss/defaultTheme";
 
 export default {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-poppins)", ...fontFamily.sans],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
@@ -35,6 +35,12 @@ export default {
           800: 'rgb(17, 94, 89)',
           900: 'rgb(19, 78, 74)',
         },
+        coral2: '#D06E63',
+        peach: '#F2AE97',
+        cream: '#EBDFCB',
+        teal2: '#9DCDC8',
+        olive: '#404828',
+        dark: '#0B0A0A',
       },
       button: {
         DEFAULT: {

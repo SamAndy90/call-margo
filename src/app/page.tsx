@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { redirect } from "next/navigation";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
 export default async function Home() {
   const supabase = createServerComponentClient({ cookies });
@@ -10,11 +10,8 @@ export default async function Home() {
   } = await supabase.auth.getSession();
 
   if (session) {
-    redirect('/dashboard');
+    redirect("/dashboard");
   } else {
-    redirect('/signin');
+    redirect("/signin");
   }
-
-  // This will never be rendered
-  return null;
 }
