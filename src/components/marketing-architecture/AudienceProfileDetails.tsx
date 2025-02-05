@@ -4,7 +4,7 @@ import ListField from "@/components/Forms/ListField";
 import VoiceOfCustomerForm from "./VoiceOfCustomerForm";
 import { Database } from "@/types/supabase";
 import type { Json } from "@/types/json";
-import FormField from "../Forms/FormField";
+import FormField from "@/components/Forms/FormField";
 
 interface VoiceOfCustomer {
   id?: string;
